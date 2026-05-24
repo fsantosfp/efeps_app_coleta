@@ -68,14 +68,19 @@ async function processNext() {
     // 3. Validações e Persistência no Banco de Dados
     const today = getSaoPauloDate();
 
-    if (metadata.plataforma === 'NÃO IDENTIFICADO' || metadata.codigo_pacote === 'NÃO IDENTIFICADO') {
-      // Inconclusivo: Grava diretamente como NÃO IDENTIFICADO sem validar duplicidade
-      const stmt = db.prepare(`
-        INSERT INTO pacotes (codigo_pacote, remetente_bruto, plataforma, caminho_imagem, data_coleta, hora_coleta)
-        VALUES (?, ?, ?, ?, ?, ?)
+    const hasMissingData = 
+      !metadata.codigo_pacote || metadata.codigo_pacote.trim() === '' || metadata.codigo_pacote === 'NÃO IDENTIFICADO' ||
+      !metadata.nome_remetente || metadata.nome_remetente.trim() === '' || metadata.nome_remetente === 'NÃO IDENTIFICADO' ||
+      !metadata.plataforma || metadata.plataforma.trim() === '' || metadata.plataforma === 'NÃO IDENTIFICADO';
+
+    if (hasMissingData) {
+      // Inconclusivo: Grava na tabela de alertas de fila para revisão do operador
+      const alertStmt = db.prepare(`
+        INSERT INTO alertas_fila (tipo_erro, codigo_conflito, caminho_imagem_nova, data_criacao, remetente_sugerido, plataforma_sugerida)
+        VALUES ('LEITURA_INCOMPLETA', ?, ?, ?, ?, ?)
       `);
-      stmt.run('NÃO IDENTIFICADO', metadata.nome_remetente, 'NÃO IDENTIFICADO', currentImagePath, today, getSaoPauloTime());
-      console.log(`[BANCO] Pacote gravado como INCONCLUSIVO: ${filename}`);
+      alertStmt.run(metadata.codigo_pacote, currentImagePath, today, metadata.nome_remetente, metadata.plataforma);
+      console.log(`[BANCO/ALERTA] Identificação incompleta detectada para pacote. Alerta 'LEITURA_INCOMPLETA' criado.`);
     } else {
       // Identificado com sucesso: verificar duplicidade na data atual (hoje)
       const checkStmt = db.prepare(`
@@ -92,7 +97,7 @@ async function processNext() {
           VALUES ('DUPLICIDADE', ?, ?, ?, ?, ?)
         `);
         alertStmt.run(metadata.codigo_pacote, currentImagePath, today, metadata.nome_remetente, metadata.plataforma);
-        console.log(`[BANCO/ALERTA] Duplicidade detectada para código ${metadata.codigo_pacote}. Alerta criado.`);
+        console.log(`[BANCO/ALERTA] Duplicidade detectada para código ${metadata.codigo_pacote}. Alerta 'DUPLICIDADE' criado.`);
       } else {
         // Sem conflito: Grava na tabela principal de pacotes
         const stmt = db.prepare(`
