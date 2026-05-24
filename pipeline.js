@@ -143,6 +143,10 @@ Sua tarefa é analisar o texto extraído por OCR de uma etiqueta e extrair estru
 - codigo_pacote: String (ou null se não encontrado)
 - plataforma: String (valores aceitos: 'Shopee', 'Mercado Livre' ou 'NÃO IDENTIFICADO')
 
+Regras estritas para código do pacote:
+1. Os códigos do Mercado Livre estão em "Envio" seguidos de valores numéricos.
+2. Os códigos da Shopee começam com "BR" seguido de valores numéricos.
+
 Regras estritas de classificação de plataforma:
 1. Shopee: Deve conter o termo delimitador "REMETENTE" (ou variação clara de remetente) na seção inferior da etiqueta e o código de rastreamento/pacote iniciando estritamente com os caracteres "BR" (ex: BR2164448398492).
 2. Mercado Livre: Deve conter o caractere "#" colado ao identificador numérico da loja na linha do remetente (exemplo: "Cliente Exemplo #131056") OU conter a palavra "FLEX" (referente à logística expressa do Mercado Livre).
