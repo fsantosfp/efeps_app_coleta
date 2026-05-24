@@ -243,6 +243,29 @@ async function runTests() {
     console.error('ERRO: Falha ao deletar pacote ou arquivo físico permanecendo ativo.');
   }
 
+  // 11. Teste de Identificação Incompleta (LEITURA_INCOMPLETA)
+  console.log('\n[TESTE 11] Testando alerta de leitura incompleta (informação não identificada)...');
+  const incompleteUpload = await uploadMockFile(
+    'http://localhost:3000/api/upload',
+    'unreadable_label.jpg',
+    'texto ilegivel qualquer'
+  );
+  console.log('Status Code:', incompleteUpload.status);
+
+  // Aguarda 4 segundos para o processamento assíncrono
+  console.log('\n[*] Aguardando 4 segundos para processamento de leitura incompleta...');
+  await new Promise(r => setTimeout(r, 4000));
+
+  // Verifica se o alerta foi gerado
+  const incompleteDash = await get('http://localhost:3000/api/dashboard');
+  const alertList = incompleteDash.body.data.alerts;
+  const incompleteAlert = alertList.find(a => a.tipo_erro === 'LEITURA_INCOMPLETA');
+  if (incompleteAlert) {
+    console.log('Sucesso: Alerta de leitura incompleta detectado no sino!', incompleteAlert);
+  } else {
+    console.error('ERRO: Alerta de leitura incompleta não foi gerado no sino.');
+  }
+
   console.log('\n=== FIM DOS TESTES DE INTEGRAÇÃO ===');
 }
 
