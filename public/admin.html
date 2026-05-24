@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html class="dark" lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Logistics Pro - Painel Administrativo</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+  
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "tertiary": "#ffb695",
+            "surface-bright": "#1e293b",
+            "secondary-fixed-dim": "#4edea3",
+            "surface-container-lowest": "#060e20",
+            "outline": "#334155",
+            "primary": "#c3c0ff",
+            "primary-container": "#4f46e5",
+            "surface-container": "#1e293b",
+            "on-background": "#e4e1ee",
+            "surface-variant": "#35343e",
+            "tertiary-fixed-dim": "#ffb695",
+            "on-error-container": "#ffdad6",
+            "on-error": "#690005",
+            "outline-variant": "#464555",
+            "on-tertiary-fixed": "#351000",
+            "on-secondary-container": "#00311f",
+            "on-secondary-fixed-variant": "#005236",
+            "on-primary": "#1d00a5",
+            "on-surface": "#e4e1ee",
+            "primary-fixed": "#e2dfff",
+            "on-surface-variant": "#c7c4d8",
+            "inverse-on-surface": "#302f39",
+            "inverse-surface": "#e4e1ee",
+            "secondary-fixed": "#6ffbbe",
+            "on-primary-container": "#dad7ff",
+            "surface-container-low": "#131b2e",
+            "on-primary-fixed": "#0f0069",
+            "primary-fixed-dim": "#c3c0ff",
+            "on-secondary-fixed": "#002113",
+            "on-tertiary-container": "#ffd2be",
+            "secondary": "#4edea3",
+            "surface-container-high": "#334155",
+            "surface-dim": "#13121b",
+            "error-container": "#93000a",
+            "on-tertiary-fixed-variant": "#7b2f00",
+            "surface-container-highest": "#475569",
+            "surface": "#0b1326",
+            "error": "#ef4444",
+            "tertiary-container": "#a44100",
+            "inverse-primary": "#4d44e3",
+            "on-primary-fixed-variant": "#3323cc",
+            "surface-tint": "#c3c0ff",
+            "on-tertiary": "#571f00",
+            "secondary-container": "#00a572",
+            "background": "#13121b",
+            "tertiary-fixed": "#ffdbcc",
+            "on-secondary": "#003824"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "unit": "4px",
+            "space-6": "24px",
+            "space-1": "4px",
+            "gutter": "16px",
+            "space-2": "8px",
+            "space-4": "16px",
+            "space-5": "20px",
+            "space-8": "32px",
+            "margin-desktop": "32px",
+            "margin-mobile": "16px",
+            "space-12": "48px"
+          },
+          "fontFamily": {
+            "headline-lg-mobile": ["Outfit"],
+            "headline-md": ["Outfit"],
+            "body-md": ["Inter"],
+            "body-lg": ["Inter"],
+            "body-sm": ["Inter"],
+            "headline-xl": ["Outfit"],
+            "label-md": ["Inter"],
+            "headline-sm": ["Outfit"],
+            "headline-lg": ["Outfit"]
+          },
+          "fontSize": {
+            "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "600"}],
+            "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+            "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+            "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+            "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+            "headline-xl": ["40px", {"lineHeight": "48px", "fontWeight": "700"}],
+            "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+            "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "500"}],
+            "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}]
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #13121b;
+      color: #e4e1ee;
+      font-family: 'Inter', sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #060e20;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 10px;
+    }
+    .glass-effect {
+      backdrop-filter: blur(8px);
+      background: rgba(30, 41, 59, 0.7);
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator,
+    input[type="time"]::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+    }
+  </style>
+</head>
+<body class="antialiased font-body-md overflow-hidden">
+  
+  <!-- Sidebar Navigation -->
+  <aside class="h-screen w-64 fixed left-0 top-0 bg-surface-container-low border-r border-outline flex flex-col py-space-6 px-space-4 z-50">
+    <div class="mb-space-12 px-space-4">
+      <h1 class="font-headline-md text-headline-md font-bold text-primary">Logistics Pro</h1>
+      <p class="font-label-md text-label-md text-on-surface-variant tracking-wider uppercase">Controle de Coleta</p>
+    </div>
+    
+    <nav class="flex-grow space-y-space-2" id="sidebar-nav">
+      <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-space-4 py-space-4 px-space-4 rounded-lg text-primary font-bold bg-surface-container border-r-2 border-primary transition-all duration-200 relative">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+        <span class="font-label-md text-label-md">Dashboard</span>
+      </button>
+      <button onclick="switchTab('alertas')" id="nav-alertas" class="w-full flex items-center gap-space-4 py-space-4 px-space-4 rounded-lg text-on-surface-variant font-medium hover:bg-surface-container hover:text-primary transition-all duration-200 relative">
+        <span class="material-symbols-outlined">warning</span>
+        <span class="font-label-md text-label-md">Alertas Pendentes</span>
+        <span id="sidebar-alert-badge" class="hidden absolute right-4 top-1/2 -translate-y-1/2 min-w-5 h-5 px-1.5 bg-error text-on-error flex items-center justify-center rounded-full text-[10px] font-bold">0</span>
+      </button>
+      <button onclick="switchTab('historico')" id="nav-historico" class="w-full flex items-center gap-space-4 py-space-4 px-space-4 rounded-lg text-on-surface-variant font-medium hover:bg-surface-container hover:text-primary transition-all duration-200 relative">
+        <span class="material-symbols-outlined">history</span>
+        <span class="font-label-md text-label-md">Histórico</span>
+      </button>
+      <button onclick="switchTab('relatorios')" id="nav-relatorios" class="w-full flex items-center gap-space-4 py-space-4 px-space-4 rounded-lg text-on-surface-variant font-medium hover:bg-surface-container hover:text-primary transition-all duration-200 relative">
+        <span class="material-symbols-outlined">assessment</span>
+        <span class="font-label-md text-label-md">Relatórios</span>
+      </button>
+    </nav>
+    
+    <div class="mt-auto pt-space-6 border-t border-outline-variant px-space-4 flex flex-col gap-4">
+      <a class="flex items-center gap-space-4 text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="/mobile" target="_blank">
+        <span class="material-symbols-outlined">photo_camera</span>
+        <span class="font-label-md text-label-md">Tela de Captura (Celular)</span>
+      </a>
+      
+      <div class="flex items-center gap-space-3">
+        <div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-primary font-bold text-sm">
+          A
+        </div>
+        <div class="overflow-hidden">
+          <p class="font-label-md text-label-md text-on-surface truncate">Administrador</p>
+          <p class="text-[10px] text-on-surface-variant truncate">Painel Local</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Wrapper -->
+  <main class="ml-64 min-h-screen flex flex-col">
+    <!-- TopAppBar -->
+    <header class="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 bg-surface border-b border-outline flex justify-between items-center px-space-8 z-40">
+      <div class="flex items-center gap-space-4">
+        <h2 class="font-headline-sm text-headline-sm font-bold text-on-surface" id="tab-title">Dashboard</h2>
+        <div class="h-6 w-px bg-outline-variant mx-space-2"></div>
+        <div class="flex items-center text-on-surface-variant gap-space-2">
+          <span class="material-symbols-outlined text-[18px]">calendar_today</span>
+          <span class="font-body-sm text-body-sm" id="current-date">Carregando data...</span>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-space-6">
+        <!-- Sino de Alertas (Redireciona para tela de alertas) -->
+        <div class="relative">
+          <button onclick="switchTab('alertas')" class="relative group cursor-pointer p-2 flex items-center">
+            <span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">notifications</span>
+            <span id="alert-badge" class="hidden absolute top-0 right-0 w-4 h-4 bg-error text-on-error flex items-center justify-center rounded-full text-[9px] font-bold">0</span>
+          </button>
+        </div>
+
+        <div class="h-8 w-px bg-outline"></div>
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-secondary"></span>
+          <span class="text-label-caps font-label-caps text-on-surface-variant">Servidor Local</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- VIEWS CONTAINER -->
+    <div class="pt-20 pb-6 px-space-8 max-w-7xl mx-auto w-full flex-grow overflow-y-auto h-[calc(100vh-4rem)] custom-scrollbar">
+      
+      <!-- ========================================== -->
+      <!-- VIEW: DASHBOARD -->
+      <!-- ========================================== -->
+      <section id="view-dashboard" class="space-y-6">
+        <!-- Metrics Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-space-6">
+          <!-- Shopee Card -->
+          <div class="bg-surface-container-low border border-outline rounded-xl p-space-6 relative overflow-hidden group">
+            <div class="absolute top-0 right-0 p-space-4 opacity-10">
+              <span class="material-symbols-outlined text-[80px] text-primary">shopping_cart</span>
+            </div>
+            <div class="relative z-10">
+              <div class="flex items-center justify-between mb-space-4">
+                <span class="px-space-3 py-space-1 bg-primary-container/20 text-primary rounded-full font-label-md text-label-md border border-primary-container/30">Shopee</span>
+                <span class="material-symbols-outlined text-primary">trending_up</span>
+              </div>
+              <h3 class="font-headline-lg text-headline-lg text-on-surface" id="metric-shopee">0 pacotes</h3>
+              <p class="text-on-surface-variant font-body-sm text-body-sm mt-space-1">Processados hoje</p>
+            </div>
+          </div>
+          <!-- Mercado Livre Card -->
+          <div class="bg-surface-container-low border border-outline rounded-xl p-space-6 relative overflow-hidden group">
+            <div class="absolute top-0 right-0 p-space-4 opacity-10">
+              <span class="material-symbols-outlined text-[80px] text-secondary">storefront</span>
+            </div>
+            <div class="relative z-10">
+              <div class="flex items-center justify-between mb-space-4">
+                <span class="px-space-3 py-space-1 bg-secondary-container/20 text-secondary rounded-full font-label-md text-label-md border border-secondary-container/30">Mercado Livre</span>
+                <span class="material-symbols-outlined text-secondary">trending_up</span>
+              </div>
+              <h3 class="font-headline-lg text-headline-lg text-on-surface" id="metric-ml">0 pacotes</h3>
+              <p class="text-on-surface-variant font-body-sm text-body-sm mt-space-1">Processados hoje</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Processing Queue -->
+        <div class="bg-surface-container-low border border-outline rounded-xl p-space-6">
+          <div class="flex items-center justify-between mb-space-4">
+            <div class="flex items-center gap-space-3">
+              <span class="material-symbols-outlined text-primary">pending_actions</span>
+              <h4 class="font-headline-sm text-headline-sm text-on-surface">Fila de Processamento</h4>
+            </div>
+            <span class="font-label-md text-label-md text-on-surface-variant font-bold" id="queue-status-text">0 de 0 pacotes processados</span>
+          </div>
+          <div class="w-full bg-surface-container-highest h-3 rounded-full overflow-hidden">
+            <div id="queue-progress-bar" class="h-full bg-primary-container transition-all duration-1000 ease-out" style="width: 0%;"></div>
+          </div>
+          <div class="flex justify-between mt-space-2 text-[10px] text-on-surface-variant uppercase tracking-widest font-bold">
+            <span>Servidor Ativo</span>
+            <span class="text-primary" id="queue-percentage">0% Completo</span>
+            <span>FIFO Fila</span>
+          </div>
+        </div>
+
+
+
+        <!-- Main Dashboard Table -->
+        <div class="bg-surface-container-low border border-outline rounded-xl overflow-hidden">
+          <div class="p-space-6 border-b border-outline flex items-center justify-between">
+            <h4 class="font-headline-sm text-headline-sm text-on-surface">Últimos 50 Pacotes Cadastrados Hoje</h4>
+            <button onclick="fetchDashboardData()" class="flex items-center gap-2 px-3 py-1.5 bg-surface-container-high border border-outline rounded-lg text-body-sm hover:bg-surface-container-highest transition-colors">
+              <span class="material-symbols-outlined text-[16px]">refresh</span> Atualizar
+            </button>
+          </div>
+          <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-left border-collapse">
+              <thead class="bg-surface-container-lowest border-b border-outline-variant">
+                <tr>
+                  <th class="px-space-6 py-space-4 font-label-md text-label-md text-on-surface-variant uppercase">Horário</th>
+                  <th class="px-space-6 py-space-4 font-label-md text-label-md text-on-surface-variant uppercase">Remetente</th>
+                  <th class="px-space-6 py-space-4 font-label-md text-label-md text-on-surface-variant uppercase">Plataforma</th>
+                  <th class="px-space-6 py-space-4 font-label-md text-label-md text-on-surface-variant uppercase">Código do Pacote</th>
+                  <th class="px-space-6 py-space-4 font-label-md text-label-md text-on-surface-variant uppercase text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-outline-variant" id="dashboard-table-body">
+                <!-- Preenchido via API -->
+                <tr>
+                  <td colspan="5" class="text-center py-8 text-on-surface-variant/50">Carregando dados dos pacotes...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW: HISTÓRICO -->
+      <!-- ========================================== -->
+      <section id="view-historico" class="hidden space-y-6">
+        <div class="bg-surface-container-low border border-outline rounded-xl p-space-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div class="space-y-2">
+            <label class="font-label-md text-label-md text-on-surface-variant block">Consultar por Data</label>
+            <div class="relative w-64">
+              <input class="w-full bg-surface-container-lowest border border-outline rounded-lg py-2.5 px-4 text-body-sm focus:border-primary focus:ring-0" type="date" id="history-date-filter"/>
+            </div>
+          </div>
+          <button onclick="fetchHistory()" class="px-6 py-2.5 bg-primary text-on-primary font-bold rounded-lg hover:opacity-90 active:scale-[0.98] transition-all flex items-center gap-2">
+            <span class="material-symbols-outlined">search</span> Buscar Pacotes
+          </button>
+        </div>
+
+        <div class="bg-surface-container-low border border-outline rounded-xl overflow-hidden">
+          <div class="p-space-6 border-b border-outline">
+            <h4 class="font-headline-sm text-headline-sm text-on-surface">Histórico de Coleta</h4>
+          </div>
+          <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-left border-collapse">
+              <thead class="bg-surface-container-lowest border-b border-outline-variant">
+                <tr>
+                  <th class="px-space-6 py-space-4 font-label-md text-label-md text-on-surface-variant uppercase">Horário</th>
+                  <th class="px-space-6 py-space-4 font-label-md text-label-md text-on-surface-variant uppercase">Remetente</th>
+                  <th class="px-space-6 py-space-4 font-label-md text-label-md text-on-surface-variant uppercase">Plataforma</th>
+                  <th class="px-space-6 py-space-4 font-label-md text-label-md text-on-surface-variant uppercase">Código do Pacote</th>
+                  <th class="px-space-6 py-space-4 font-label-md text-label-md text-on-surface-variant uppercase text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-outline-variant" id="history-table-body">
+                <tr>
+                  <td colspan="5" class="text-center py-8 text-on-surface-variant/50">Selecione uma data e clique em buscar.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW: RELATÓRIOS -->
+      <!-- ========================================== -->
+      <section id="view-relatorios" class="hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-space-8">
+          
+          <!-- Relatório 1: Por Cliente -->
+          <div class="bg-surface-container-low rounded-xl border border-outline p-space-6 flex flex-col">
+            <div class="flex items-center justify-between mb-space-6">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                  <span class="material-symbols-outlined">group</span>
+                </div>
+                <h2 class="font-headline-sm text-headline-sm text-on-surface">Por Cliente (Faturamento)</h2>
+              </div>
+              <span class="text-xs font-label-md py-1 px-3 rounded-full bg-secondary/10 text-secondary border border-secondary/20">Prestação de Contas</span>
+            </div>
+
+            <div class="space-y-space-4 mb-space-6">
+              <div class="relative">
+                <input class="w-full bg-surface-container-lowest border border-outline rounded-lg py-2.5 pl-4 pr-10 text-body-sm focus:border-primary focus:ring-0" id="clientSearch" placeholder="Pesquisar cliente..." type="text" oninput="filterClients(event)"/>
+                <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant opacity-50">search</span>
+              </div>
+              <div class="flex justify-between items-center px-1">
+                <p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Lista de Clientes</p>
+                <button class="text-xs font-bold text-primary hover:underline" id="toggleAll" onclick="toggleClients()">Marcar Todos</button>
+              </div>
+              <div class="bg-surface-container-lowest border border-outline rounded-lg h-48 overflow-y-auto custom-scrollbar p-space-2 space-y-1" id="client-checklist-container">
+                <!-- Populado dinamicamente -->
+                <p class="text-xs text-on-surface-variant/60 text-center py-16">Nenhum cliente cadastrado no banco</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-space-4 mb-space-8">
+              <div class="space-y-2">
+                <label class="font-label-md text-label-md text-on-surface-variant block">Data Início</label>
+                <input class="w-full bg-surface-container border border-outline rounded-lg py-2 px-3 text-body-sm focus:border-primary focus:ring-0" type="date" id="client-report-start"/>
+              </div>
+              <div class="space-y-2">
+                <label class="font-label-md text-label-md text-on-surface-variant block">Data Fim</label>
+                <input class="w-full bg-surface-container border border-outline rounded-lg py-2 px-3 text-body-sm focus:border-primary focus:ring-0" type="date" id="client-report-end"/>
+              </div>
+            </div>
+
+            <button onclick="generateClientReport()" class="mt-auto w-full py-3.5 bg-primary text-on-primary font-bold rounded-lg flex items-center justify-center gap-3 hover:opacity-90 active:scale-[0.98] transition-all">
+              <span class="material-symbols-outlined">picture_as_pdf</span> Gerar PDF de Faturamento
+            </button>
+          </div>
+
+          <!-- Relatório 2: Conferência de Coleta -->
+          <div class="bg-surface-container-low rounded-xl border border-outline p-space-6 flex flex-col">
+            <div class="flex items-center justify-between mb-space-6">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
+                  <span class="material-symbols-outlined">local_shipping</span>
+                </div>
+                <h2 class="font-headline-sm text-headline-sm text-on-surface">Conferência de Coleta (Balcão)</h2>
+              </div>
+              <span class="text-xs font-label-md py-1 px-3 rounded-full bg-primary/10 text-primary border border-primary/20">Auditoria</span>
+            </div>
+
+            <p class="text-on-surface-variant text-body-sm mb-space-6">Confronte os volumes recebidos de forma cronológica estipulando uma data e uma janela horária de corte para conferência de balcão ou turno.</p>
+
+            <div class="space-y-space-6 mb-space-8">
+              <div class="space-y-2">
+                <label class="font-label-md text-label-md text-on-surface-variant block">Data de Coleta</label>
+                <div class="relative">
+                  <input class="w-full bg-surface-container-lowest border border-outline rounded-lg py-3 px-4 text-body-sm focus:border-primary focus:ring-0" type="date" id="conferencia-report-date"/>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-space-4">
+                <div class="space-y-2">
+                  <label class="font-label-md text-label-md text-on-surface-variant block">Hora Início</label>
+                  <input class="w-full bg-surface-container-lowest border border-outline rounded-lg py-3 px-4 text-body-sm focus:border-primary" type="time" value="08:00" id="conferencia-report-start-time"/>
+                </div>
+                <div class="space-y-2">
+                  <label class="font-label-md text-label-md text-on-surface-variant block">Hora Fim</label>
+                  <input class="w-full bg-surface-container-lowest border border-outline rounded-lg py-3 px-4 text-body-sm focus:border-primary" type="time" value="18:00" id="conferencia-report-end-time"/>
+                </div>
+              </div>
+            </div>
+
+            <!-- Background Image decoration -->
+            <div class="relative flex-1 min-h-[140px] mb-space-6 rounded-lg overflow-hidden border border-outline-variant/30 opacity-20 bg-surface-container flex items-center justify-center">
+              <span class="material-symbols-outlined text-4xl mb-2">analytics</span>
+            </div>
+
+            <button onclick="generateConferenciaReport()" class="w-full py-3.5 bg-primary text-on-primary font-bold rounded-lg flex items-center justify-center gap-3 hover:opacity-90 active:scale-[0.98] transition-all">
+              <span class="material-symbols-outlined">picture_as_pdf</span> Gerar PDF de Balcão
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW: ALERTAS PENDENTES -->
+      <!-- ========================================== -->
+      <section id="view-alertas" class="hidden">
+        <div class="bg-surface-container-low border border-outline rounded-xl p-space-6">
+          <div class="flex items-center justify-between mb-space-4 border-b border-outline-variant pb-space-4">
+            <div class="flex items-center gap-space-3">
+              <span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">warning</span>
+              <h4 class="font-headline-sm text-headline-sm text-on-surface">Alertas Operacionais Pendentes</h4>
+            </div>
+            <button onclick="fetchDashboardData()" class="flex items-center gap-2 px-3 py-1.5 bg-surface-container-high border border-outline rounded-lg text-body-sm hover:bg-surface-container-highest transition-colors">
+              <span class="material-symbols-outlined text-[16px]">refresh</span> Atualizar
+            </button>
+          </div>
+          <p class="text-body-sm text-on-surface-variant mb-6">Aqui são exibidas as anomalias de OCR ou duplicidades de pacotes detectadas hoje que necessitam de intervenção manual para garantir a acurácia dos dados.</p>
+          <div id="alertas-page-list" class="grid grid-cols-1 md:grid-cols-2 gap-space-4">
+            <!-- Injetado dinamicamente -->
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL: CONFRONTO DE DUPLICIDADE LADO A LADO -->
+  <!-- ========================================== -->
+  <div id="modal-confronto" class="hidden fixed inset-0 z-50 flex items-center justify-center p-space-6 bg-surface-container-lowest/80 backdrop-blur-sm">
+    <div class="bg-surface-container-low border border-outline-variant w-full max-w-5xl rounded-xl shadow-2xl flex flex-col overflow-hidden">
+      <!-- Modal Header -->
+      <div class="px-space-8 py-space-6 border-b border-outline-variant flex items-center justify-between bg-surface-container">
+        <div class="flex items-center gap-space-4">
+          <div class="w-12 h-12 rounded-full bg-error-container flex items-center justify-center text-error">
+            <span class="material-symbols-outlined text-[30px]" style="font-variation-settings: 'FILL' 1;">warning</span>
+          </div>
+          <div>
+            <h2 class="font-headline-md text-headline-md text-on-surface">Conflito de Duplicidade Detectado</h2>
+            <p class="font-body-sm text-body-sm text-on-surface-variant">Este código de etiqueta já deu entrada no sistema na data de hoje.</p>
+          </div>
+        </div>
+        <button onclick="closeConfrontoModal()" class="text-on-surface-variant hover:text-on-surface">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="flex-grow grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-outline-variant overflow-y-auto max-h-[60vh] custom-scrollbar">
+        <!-- Coluna Esquerda: Pacote Existente -->
+        <div class="p-space-8 space-y-space-6 flex flex-col justify-between">
+          <div class="space-y-4">
+            <div class="flex items-center gap-space-2">
+              <span class="material-symbols-outlined text-primary">database</span>
+              <h3 class="font-headline-sm text-headline-sm">Pacote Cadastrado no Banco</h3>
+            </div>
+            
+            <div class="relative group h-48 border border-outline rounded-lg overflow-hidden bg-black/40">
+              <img id="confronto-old-img" class="w-full h-full object-contain cursor-pointer" src="" onclick="openImageModal(this.src)"/>
+              <span class="absolute top-space-4 right-space-4 bg-primary/20 text-primary px-space-3 py-space-1 rounded-full text-label-md border border-primary/30 font-bold">SALVO NO BANCO</span>
+            </div>
+
+            <!-- Dados Originais (Estáticos ou Editáveis) -->
+            <div id="confronto-old-data-box" class="space-y-space-4 bg-surface-container/50 p-space-4 rounded-lg border border-outline">
+              <div class="flex justify-between border-b border-outline-variant pb-space-2">
+                <span class="text-on-surface-variant text-body-sm">ID do Registro</span>
+                <span class="text-on-surface font-semibold font-body-sm" id="confronto-old-id">#0</span>
+              </div>
+              <div class="flex justify-between border-b border-outline-variant pb-space-2">
+                <span class="text-on-surface-variant text-body-sm">Horário de Coleta</span>
+                <span class="text-on-surface font-semibold font-body-sm" id="confronto-old-time">00:00</span>
+              </div>
+              <div class="flex justify-between border-b border-outline-variant pb-space-2">
+                <span class="text-on-surface-variant text-body-sm">Código Cadastrado</span>
+                <span class="text-on-surface font-bold text-body-sm" id="confronto-old-code">BRXXXX</span>
+              </div>
+              <div class="flex justify-between border-b border-outline-variant pb-space-2">
+                <span class="text-on-surface-variant text-body-sm">Plataforma</span>
+                <span class="text-on-surface font-semibold text-body-sm" id="confronto-old-platform">Shopee</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-on-surface-variant text-body-sm">Remetente</span>
+                <span class="text-on-surface font-semibold text-body-sm" id="confronto-old-sender">Loja A</span>
+              </div>
+            </div>
+
+            <!-- Form de Edição do Pacote Antigo (Oculto Inicialmente) -->
+            <div id="confronto-old-edit-form" class="hidden space-y-4 bg-surface-container/50 p-space-4 rounded-lg border border-outline">
+              <p class="text-xs text-primary font-bold uppercase">Editar Registro Antigo</p>
+              <div class="space-y-1">
+                <label class="text-label-md text-on-surface-variant block">Código de Rastreio</label>
+                <input id="confronto-old-input-code" class="w-full bg-surface-container-lowest border border-outline rounded-lg px-4 py-2 text-on-surface focus:ring-1 focus:ring-primary outline-none text-body-sm" type="text"/>
+              </div>
+              <div class="space-y-1">
+                <label class="text-label-md text-on-surface-variant block">Remetente</label>
+                <input id="confronto-old-input-sender" class="w-full bg-surface-container-lowest border border-outline rounded-lg px-4 py-2 text-on-surface focus:ring-1 focus:ring-primary outline-none text-body-sm" type="text"/>
+              </div>
+              <div class="space-y-1">
+                <label class="text-label-md text-on-surface-variant block">Plataforma</label>
+                <select id="confronto-old-input-platform" class="w-full bg-surface-container-lowest border border-outline rounded-lg px-4 py-2 text-on-surface focus:ring-1 focus:ring-primary outline-none text-body-sm">
+                  <option value="Shopee">Shopee</option>
+                  <option value="Mercado Livre">Mercado Livre</option>
+                  <option value="NÃO IDENTIFICADO">NÃO IDENTIFICADO</option>
+                </select>
+              </div>
+              <button onclick="saveOldPackageConfronto()" class="w-full py-2 bg-primary text-on-primary rounded font-label-md text-xs font-bold hover:opacity-90">
+                Salvar Alterações no Pacote Antigo
+              </button>
+            </div>
+          </div>
+          
+          <button id="btn-edit-old-confronto" onclick="enableConfrontoOldEdit()" class="w-full mt-4 py-space-3 px-space-4 border border-primary text-primary rounded-lg font-label-md flex items-center justify-center gap-space-2 hover:bg-primary/10 transition-all">
+            <span class="material-symbols-outlined text-[18px]">edit_note</span> Editar Registro do Banco
+          </button>
+        </div>
+
+        <!-- Coluna Direita: Nova Tentativa (Pendente) -->
+        <div class="p-space-8 space-y-space-6 bg-surface-container-lowest/30 flex flex-col justify-between">
+          <div class="space-y-4">
+            <div class="flex items-center gap-space-2">
+              <span class="material-symbols-outlined text-secondary">camera_enhance</span>
+              <h3 class="font-headline-sm text-headline-sm">Nova Foto Recebida</h3>
+            </div>
+            
+            <div class="relative group h-48 border border-secondary rounded-lg overflow-hidden bg-black/40 shadow-lg shadow-secondary/5">
+              <img id="confronto-new-img" class="w-full h-full object-contain cursor-pointer" src="" onclick="openImageModal(this.src)"/>
+              <span class="absolute top-space-4 right-space-4 bg-secondary text-on-secondary px-space-3 py-space-1 rounded-full text-label-md font-bold">FILA DE ENTRADA</span>
+            </div>
+
+            <!-- Form de Edição da Nova Entrada (Sempre Editável) -->
+            <div class="space-y-space-3">
+              <div class="space-y-1">
+                <label class="text-label-md text-on-surface-variant block">Código de Rastreio</label>
+                <input id="confronto-new-input-code" class="w-full bg-surface-container border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:ring-1 focus:ring-primary outline-none text-body-sm" type="text"/>
+              </div>
+              <div class="space-y-1">
+                <label class="text-label-md text-on-surface-variant block">Remetente</label>
+                <input id="confronto-new-input-sender" class="w-full bg-surface-container border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:ring-1 focus:ring-primary outline-none text-body-sm" type="text"/>
+              </div>
+              <div class="space-y-1">
+                <label class="text-label-md text-on-surface-variant block">Plataforma</label>
+                <select id="confronto-new-input-platform" class="w-full bg-surface-container border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:ring-1 focus:ring-primary outline-none text-body-sm">
+                  <option value="Shopee">Shopee</option>
+                  <option value="Mercado Livre">Mercado Livre</option>
+                  <option value="NÃO IDENTIFICADO">NÃO IDENTIFICADO</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-space-8 py-space-6 border-t border-outline-variant bg-surface-container flex items-center justify-end gap-space-4">
+        <button id="btn-descartar-confronto" class="px-space-6 py-space-3 border border-error text-error rounded-lg font-label-md hover:bg-error/10 transition-all flex items-center gap-space-2">
+          <span class="material-symbols-outlined text-[18px]">delete_forever</span> Descartar Nova Foto (Duplicada)
+        </button>
+        <button id="btn-confirmar-confronto" class="px-space-8 py-space-3 bg-secondary text-on-secondary rounded-lg font-label-md font-bold shadow-lg shadow-secondary/25 hover:brightness-105 active:scale-[0.98] transition-all flex items-center gap-space-2">
+          <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">check_circle</span> Confirmar e Gravar Novo Pacote
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: EDIÇÃO RÁPIDA DE PACOTE -->
+  <!-- ========================================== -->
+  <div id="modal-edit-pacote" class="hidden fixed inset-0 z-50 flex items-center justify-center p-6 bg-surface-container-lowest/80 backdrop-blur-sm">
+    <div class="bg-surface-container-low border border-outline-variant w-full max-w-3xl rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+      <div class="px-6 py-4 border-b border-outline-variant bg-surface-container flex justify-between items-center">
+        <h3 class="font-headline-sm text-headline-sm text-on-surface">Editar Pacote</h3>
+        <button onclick="closeEditModal()" class="text-on-surface-variant hover:text-on-surface">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+        <!-- Coluna Esquerda: Preview da Imagem -->
+        <div class="flex flex-col gap-2">
+          <label class="text-label-md text-on-surface-variant block font-bold">Etiqueta do Pacote</label>
+          <div class="relative group h-64 border border-outline rounded-lg overflow-hidden bg-black/40 flex items-center justify-center">
+            <img id="edit-pkg-img" class="w-full h-full object-contain cursor-pointer hidden" src="" onclick="openImageModal(this.src)" onload="this.classList.remove('hidden'); document.getElementById('edit-pkg-placeholder').classList.add('hidden')" onerror="this.classList.add('hidden'); document.getElementById('edit-pkg-placeholder').classList.remove('hidden')"/>
+            <div id="edit-pkg-placeholder" class="flex flex-col items-center justify-center text-on-surface-variant/40 gap-2">
+              <span class="material-symbols-outlined text-4xl">image_not_supported</span>
+              <span class="text-xs">Imagem indisponível</span>
+            </div>
+            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 pointer-events-none">
+              <span class="bg-surface-container-high px-3 py-1.5 rounded-full text-xs border border-outline text-on-surface">Clique para ampliar</span>
+            </div>
+          </div>
+        </div>
+        <!-- Coluna Direita: Inputs de Edição -->
+        <div class="space-y-4 flex flex-col justify-center">
+          <input type="hidden" id="edit-pkg-id"/>
+          <div class="space-y-1">
+            <label class="text-label-md text-on-surface-variant block font-bold">Código de Rastreio</label>
+            <input id="edit-pkg-code" class="w-full bg-surface-container border border-outline rounded-lg px-4 py-2.5 text-on-surface outline-none focus:ring-1 focus:ring-primary text-body-sm" type="text"/>
+          </div>
+          <div class="space-y-1">
+            <label class="text-label-md text-on-surface-variant block font-bold">Remetente</label>
+            <input id="edit-pkg-sender" class="w-full bg-surface-container border border-outline rounded-lg px-4 py-2.5 text-on-surface outline-none focus:ring-1 focus:ring-primary text-body-sm" type="text"/>
+          </div>
+          <div class="space-y-1">
+            <label class="text-label-md text-on-surface-variant block font-bold">Plataforma</label>
+            <select id="edit-pkg-platform" class="w-full bg-surface-container border border-outline rounded-lg px-4 py-2.5 text-on-surface outline-none focus:ring-1 focus:ring-primary text-body-sm">
+              <option value="Shopee">Shopee</option>
+              <option value="Mercado Livre">Mercado Livre</option>
+              <option value="NÃO IDENTIFICADO">NÃO IDENTIFICADO</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-outline-variant bg-surface-container flex justify-end gap-3">
+        <button onclick="closeEditModal()" class="px-4 py-2 border border-outline text-on-surface rounded-lg font-label-md hover:bg-surface-container-high transition-colors">Cancelar</button>
+        <button onclick="saveEditPackage()" class="px-6 py-2 bg-primary text-on-primary font-bold rounded-lg hover:opacity-90 transition-colors font-label-md shadow-lg shadow-primary/10">Salvar Alterações</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: VISUALIZADOR DE IMAGEM DA ETIQUETA -->
+  <!-- ========================================== -->
+  <div id="modal-image" class="hidden fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/90" onclick="closeImageModal()">
+    <button class="absolute top-6 right-6 text-white bg-white/10 hover:bg-white/20 p-2 rounded-full">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+    <img id="full-size-image" class="max-w-full max-h-full object-contain rounded-lg border border-white/10" src=""/>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- JAVASCRIPT LOGIC & API INTEGRATION -->
+  <!-- ========================================== -->
+  <script>
+    let currentTab = 'dashboard';
+    let allClientsSelected = false;
+    let packagesCache = {};
+    let alertsCache = {};
+    let confrontoMode = 'alert';
+    let confrontoEditPackageId = null;
+
+    // Configura a data do topo
+    function updateDate() {
+      const now = new Date();
+      const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+      document.getElementById('current-date').textContent = now.toLocaleDateString('pt-BR', options);
+    }
+    updateDate();
+
+    // Alternar abas da aplicação (SPA)
+    function switchTab(tab) {
+      currentTab = tab;
+      
+      // Oculta todas as telas
+      document.getElementById('view-dashboard').classList.add('hidden');
+      document.getElementById('view-historico').classList.add('hidden');
+      document.getElementById('view-relatorios').classList.add('hidden');
+      document.getElementById('view-alertas').classList.add('hidden');
+      
+      // Remove estilo ativo da barra lateral
+      document.querySelectorAll('#sidebar-nav button').forEach(btn => {
+        btn.className = "w-full flex items-center gap-space-4 py-space-4 px-space-4 rounded-lg text-on-surface-variant font-medium hover:bg-surface-container hover:text-primary transition-all duration-200 relative";
+      });
+
+      // Ativa tela e botão corretos
+      if (tab === 'dashboard') {
+        document.getElementById('view-dashboard').classList.remove('hidden');
+        document.getElementById('nav-dashboard').className = "w-full flex items-center gap-space-4 py-space-4 px-space-4 rounded-lg text-primary font-bold bg-surface-container border-r-2 border-primary transition-all duration-200 relative";
+        document.getElementById('tab-title').textContent = "Dashboard";
+        fetchDashboardData();
+      } else if (tab === 'alertas') {
+        document.getElementById('view-alertas').classList.remove('hidden');
+        document.getElementById('nav-alertas').className = "w-full flex items-center gap-space-4 py-space-4 px-space-4 rounded-lg text-primary font-bold bg-surface-container border-r-2 border-primary transition-all duration-200 relative";
+        document.getElementById('tab-title').textContent = "Alertas Pendentes";
+        fetchDashboardData();
+      } else if (tab === 'historico') {
+        document.getElementById('view-historico').classList.remove('hidden');
+        document.getElementById('nav-historico').className = "w-full flex items-center gap-space-4 py-space-4 px-space-4 rounded-lg text-primary font-bold bg-surface-container border-r-2 border-primary transition-all duration-200 relative";
+        document.getElementById('tab-title').textContent = "Histórico de Coletas";
+        // Preenche com a data de hoje por padrão
+        const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+        document.getElementById('history-date-filter').value = today;
+        fetchHistory();
+      } else if (tab === 'relatorios') {
+        document.getElementById('view-relatorios').classList.remove('hidden');
+        document.getElementById('nav-relatorios').className = "w-full flex items-center gap-space-4 py-space-4 px-space-4 rounded-lg text-primary font-bold bg-surface-container border-r-2 border-primary transition-all duration-200 relative";
+        document.getElementById('tab-title').textContent = "Relatórios Avançados";
+        
+        // Define datas padrão para os relatórios
+        const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+        document.getElementById('client-report-start').value = today;
+        document.getElementById('client-report-end').value = today;
+        document.getElementById('conferencia-report-date').value = today;
+        
+        fetchClientsForReport();
+      }
+    }
+
+    // ==========================================
+    // SSE: REAL-TIME EVENTS CONNECTION
+    // ==========================================
+    function initSSE() {
+      const eventSource = new EventSource('/api/events');
+      
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'dashboard-update') {
+            console.log('[SSE] Atualização em tempo real recebida do servidor.');
+            fetchDashboardData();
+            if (currentTab === 'historico') {
+              fetchHistory();
+            }
+          }
+        } catch (err) {
+          console.error('[SSE] Erro ao processar evento:', err);
+        }
+      };
+
+      eventSource.onerror = (err) => {
+        console.warn('[SSE] Conexão com eventos interrompida. Tentando reconectar...');
+      };
+    }
+
+    // ==========================================
+    // API: DASHBOARD DATA FETCH
+    // ==========================================
+    async function fetchDashboardData() {
+      try {
+        const response = await fetch('/api/dashboard');
+        const result = await response.json();
+        
+        if (!result.success) return;
+        const data = result.data;
+
+        // Limpa e repopula os caches
+        packagesCache = {};
+        alertsCache = {};
+        if (data.packages) {
+          data.packages.forEach(pkg => {
+            packagesCache[pkg.id] = pkg;
+          });
+        }
+        if (data.alerts) {
+          data.alerts.forEach(alert => {
+            alertsCache[alert.id] = alert;
+          });
+        }
+
+        // 1. Atualizar Big Numbers
+        document.getElementById('metric-shopee').innerText = `${data.metrics.shopee} pacotes`;
+        document.getElementById('metric-ml').innerText = `${data.metrics.mercadoLivre} pacotes`;
+
+        // 2. Fila de Processamento
+        const total = data.queue.totalToday;
+        const processed = data.queue.processedToday;
+        const pending = data.queue.pending;
+        
+        document.getElementById('queue-status-text').innerText = `${processed} de ${total} pacotes processados (${pending} na fila)`;
+        const percentage = total > 0 ? Math.round((processed / total) * 100) : 0;
+        document.getElementById('queue-progress-bar').style.width = `${percentage}%`;
+        document.getElementById('queue-percentage').innerText = `${percentage}% Completo`;
+
+        // 3. Sino e Alertas badges
+        const alertBadge = document.getElementById('alert-badge');
+        const sidebarAlertBadge = document.getElementById('sidebar-alert-badge');
+        const count = data.alerts ? data.alerts.length : 0;
+        if (count > 0) {
+          alertBadge.innerText = count;
+          alertBadge.classList.remove('hidden');
+          sidebarAlertBadge.innerText = count;
+          sidebarAlertBadge.classList.remove('hidden');
+        } else {
+          alertBadge.classList.add('hidden');
+          sidebarAlertBadge.classList.add('hidden');
+        }
+
+        // 4. Nova Tela de Alertas Pendentes
+        const alertasPageList = document.getElementById('alertas-page-list');
+        if (count === 0) {
+          alertasPageList.innerHTML = `
+            <div class="col-span-full py-12 flex flex-col items-center justify-center text-on-surface-variant/40 gap-3">
+              <span class="material-symbols-outlined text-5xl text-secondary">check_circle</span>
+              <p class="font-body-md">Sem alertas pendentes. Tudo em ordem!</p>
+            </div>
+          `;
+        } else {
+          alertasPageList.innerHTML = data.alerts.map(alert => `
+            <div class="flex items-center justify-between p-5 bg-error-container/10 border border-error/30 rounded-lg">
+              <div class="flex gap-4 items-center overflow-hidden">
+                <div class="w-10 h-10 rounded-full bg-error/20 flex items-center justify-center flex-shrink-0">
+                  <span class="material-symbols-outlined text-error">content_copy</span>
+                </div>
+                <div class="overflow-hidden">
+                  <p class="font-label-md text-label-md text-on-error-container font-bold">${alert.tipo_erro}</p>
+                  <p class="text-body-sm text-on-surface-variant truncate">Código Conflito: ${alert.codigo_conflito || 'NÃO IDENTIFICADO'}</p>
+                </div>
+              </div>
+              <button onclick="openConfronto(${alert.id})" class="px-4 py-2 bg-error text-on-error rounded font-label-md text-label-md hover:bg-red-600 transition-colors flex-shrink-0">Resolver</button>
+            </div>
+          `).join('');
+        }
+
+        // 5. Tabela de 50 Pacotes
+        const tableBody = document.getElementById('dashboard-table-body');
+        if (data.packages.length === 0) {
+          tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-on-surface-variant/50">Nenhum pacote coletado hoje.</td></tr>`;
+        } else {
+          tableBody.innerHTML = data.packages.map(pkg => `
+            <tr class="hover:bg-surface-container transition-colors group">
+              <td class="px-space-6 py-space-4 font-body-sm text-body-sm text-on-surface">${pkg.hora_coleta}</td>
+              <td class="px-space-6 py-space-4 font-body-sm text-body-sm text-on-surface font-medium">${pkg.remetente_bruto}</td>
+              <td class="px-space-6 py-space-4">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
+                  pkg.plataforma === 'Shopee' ? 'bg-primary-container/20 text-primary border-primary-container/30' :
+                  pkg.plataforma === 'Mercado Livre' ? 'bg-secondary-container/20 text-secondary border-secondary-container/30' :
+                  'bg-surface-container-high text-on-surface-variant/70 border-outline'
+                }">${pkg.plataforma}</span>
+              </td>
+              <td class="px-space-6 py-space-4 font-body-sm text-body-sm text-on-surface-variant font-mono ${pkg.codigo_pacote === 'NÃO IDENTIFICADO' ? 'text-error' : ''}">${pkg.codigo_pacote}</td>
+              <td class="px-space-6 py-space-4 text-right">
+                <div class="flex justify-end gap-2">
+                  <button onclick="openImageModal('${pkg.caminho_imagem}')" class="p-1 hover:text-primary transition-colors text-on-surface-variant" title="Visualizar etiqueta">
+                    <span class="material-symbols-outlined text-[20px]">visibility</span>
+                  </button>
+                  <button onclick="openEditModal(${pkg.id})" class="p-1 hover:text-primary transition-colors text-on-surface-variant" title="Editar dados">
+                    <span class="material-symbols-outlined text-[20px]">edit</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `).join('');
+        }
+
+      } catch (err) {
+        console.error('Erro ao buscar dados da dashboard:', err);
+      }
+    }
+
+
+
+    // ==========================================
+    // API: HISTÓRICO FETCH
+    // ==========================================
+    async function fetchHistory() {
+      const date = document.getElementById('history-date-filter').value;
+      if (!date) return;
+
+      const tableBody = document.getElementById('history-table-body');
+      tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-on-surface-variant/50">Buscando pacotes...</td></tr>`;
+
+      try {
+        const response = await fetch(`/api/historico?data=${date}`);
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          if (result.data.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-on-surface-variant/50">Nenhum pacote encontrado para esta data.</td></tr>`;
+          } else {
+            result.data.forEach(pkg => {
+              packagesCache[pkg.id] = pkg;
+            });
+            tableBody.innerHTML = result.data.map(pkg => `
+              <tr class="hover:bg-surface-container transition-colors">
+                <td class="px-space-6 py-space-4 font-body-sm text-body-sm text-on-surface">${pkg.hora_coleta}</td>
+                <td class="px-space-6 py-space-4 font-body-sm text-body-sm text-on-surface font-medium">${pkg.remetente_bruto}</td>
+                <td class="px-space-6 py-space-4">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
+                    pkg.plataforma === 'Shopee' ? 'bg-primary-container/20 text-primary border-primary-container/30' :
+                    pkg.plataforma === 'Mercado Livre' ? 'bg-secondary-container/20 text-secondary border-secondary-container/30' :
+                    'bg-surface-container-high text-on-surface-variant/70 border-outline'
+                  }">${pkg.plataforma}</span>
+                </td>
+                <td class="px-space-6 py-space-4 font-body-sm text-body-sm text-on-surface-variant font-mono">${pkg.codigo_pacote}</td>
+                <td class="px-space-6 py-space-4 text-right">
+                  <div class="flex justify-end gap-2">
+                    <button onclick="openImageModal('${pkg.caminho_imagem}')" class="p-1 hover:text-primary transition-colors text-on-surface-variant">
+                      <span class="material-symbols-outlined text-[20px]">visibility</span>
+                    </button>
+                    <button onclick="openEditModal(${pkg.id})" class="p-1 hover:text-primary transition-colors text-on-surface-variant">
+                      <span class="material-symbols-outlined text-[20px]">edit</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            `).join('');
+          }
+        } else {
+          tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-error font-bold">${result.message || 'Erro ao carregar histórico.'}</td></tr>`;
+        }
+      } catch (err) {
+        console.error('Erro ao buscar histórico:', err);
+        tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-error font-bold">Erro de conexão ao buscar histórico.</td></tr>`;
+      }
+    }
+
+    // ==========================================
+    // API: CLIENTES PARA RELATÓRIOS
+    // ==========================================
+    async function fetchClientsForReport() {
+      const container = document.getElementById('client-checklist-container');
+      try {
+        const response = await fetch('/api/clientes');
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+          if (result.data.length === 0) {
+            container.innerHTML = `<p class="text-xs text-on-surface-variant/60 text-center py-16">Nenhum cliente cadastrado no banco</p>`;
+          } else {
+            container.innerHTML = result.data.map(client => `
+              <label class="flex items-center gap-3 p-2.5 rounded-md hover:bg-surface-container cursor-pointer transition-colors group">
+                <input class="client-checkbox w-4 h-4 rounded border-outline bg-surface text-primary focus:ring-primary focus:ring-offset-0 focus:ring-offset-transparent" type="checkbox" value="${client}"/>
+                <span class="font-body-sm text-on-surface group-hover:text-primary transition-colors">${client}</span>
+              </label>
+            `).join('');
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao carregar clientes:', error);
+      }
+    }
+
+    // Filtro rápido de clientes na lista
+    function filterClients(event) {
+      const term = event.target.value.toLowerCase();
+      document.querySelectorAll('.client-checkbox').forEach(cb => {
+        const label = cb.closest('label');
+        const text = label.textContent.toLowerCase();
+        if (text.includes(term)) {
+          label.classList.remove('hidden');
+          label.classList.add('flex');
+        } else {
+          label.classList.remove('flex');
+          label.classList.add('hidden');
+        }
+      });
+    }
+
+    // Toggle Marcar Todos
+    function toggleClients() {
+      const checkboxes = document.querySelectorAll('.client-checkbox');
+      allClientsSelected = !allClientsSelected;
+      checkboxes.forEach(cb => {
+        // Apenas marca os que estão visíveis
+        const label = cb.closest('label');
+        if (!label.classList.contains('hidden')) {
+          cb.checked = allClientsSelected;
+        }
+      });
+      document.getElementById('toggleAll').textContent = allClientsSelected ? "Desmarcar Todos" : "Marcar Todos";
+    }
+
+    // ==========================================
+    // GENERATE REPORTS PDF REDIRECT
+    // ==========================================
+    function generateClientReport() {
+      const selected = Array.from(document.querySelectorAll('.client-checkbox:checked')).map(cb => cb.value);
+      if (selected.length === 0) {
+        alert('Selecione ao menos um cliente da lista.');
+        return;
+      }
+      
+      const start = document.getElementById('client-report-start').value;
+      const end = document.getElementById('client-report-end').value;
+      if (!start || !end) {
+        alert('Selecione as datas de início e fim.');
+        return;
+      }
+
+      const clientStr = encodeURIComponent(selected.join(','));
+      window.open(`/api/relatorios/cliente?clientes=${clientStr}&dataInicio=${start}&dataFim=${end}`, '_blank');
+    }
+
+    function generateConferenciaReport() {
+      const date = document.getElementById('conferencia-report-date').value;
+      const start = document.getElementById('conferencia-report-start-time').value;
+      const end = document.getElementById('conferencia-report-end-time').value;
+
+      if (!date || !start || !end) {
+        alert('Preencha a data e a janela horária de corte.');
+        return;
+      }
+
+      window.open(`/api/relatorios/conferencia?data=${date}&horaInicio=${start}&horaFim=${end}`, '_blank');
+    }
+
+    // ==========================================
+    // MODAL: IMAGEM ZOOM
+    // ==========================================
+    function openImageModal(src) {
+      if (!src) return;
+      document.getElementById('full-size-image').src = src;
+      document.getElementById('modal-image').classList.remove('hidden');
+    }
+
+    function closeImageModal() {
+      document.getElementById('modal-image').classList.add('hidden');
+    }
+
+    // ==========================================
+    // MODAL: EDIÇÃO RÁPIDA DE PACOTE
+    // ==========================================
+    function openEditModal(id) {
+      const pkg = packagesCache[id];
+      if (!pkg) {
+        console.error('Pacote não encontrado no cache:', id);
+        return;
+      }
+      document.getElementById('edit-pkg-id').value = pkg.id;
+      document.getElementById('edit-pkg-code').value = pkg.codigo_pacote === 'NÃO IDENTIFICADO' ? '' : pkg.codigo_pacote;
+      document.getElementById('edit-pkg-sender').value = pkg.remetente_bruto;
+      document.getElementById('edit-pkg-platform').value = pkg.plataforma;
+      
+      const imgEl = document.getElementById('edit-pkg-img');
+      imgEl.classList.add('hidden');
+      document.getElementById('edit-pkg-placeholder').classList.remove('hidden');
+      imgEl.src = pkg.caminho_imagem || '';
+
+      document.getElementById('modal-edit-pacote').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      document.getElementById('modal-edit-pacote').classList.add('hidden');
+    }
+
+    async function saveEditPackage() {
+      const id = document.getElementById('edit-pkg-id').value;
+      const code = document.getElementById('edit-pkg-code').value;
+      const sender = document.getElementById('edit-pkg-sender').value;
+      const platform = document.getElementById('edit-pkg-platform').value;
+
+      try {
+        const response = await fetch(`/api/pacotes/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            codigo_pacote: code,
+            remetente_bruto: sender,
+            plataforma: platform
+          })
+        });
+
+        const result = await response.json();
+        if (response.ok && result.success) {
+          closeEditModal();
+          fetchDashboardData();
+          if (currentTab === 'historico') fetchHistory();
+        } else if (result.error === 'DUPLICIDADE') {
+          alert('Código duplicado detectado para hoje! Vamos abrir a tela de confronto para resolução.');
+          openConfrontoEdit(id, code);
+        } else {
+          alert('Erro ao salvar pacote: ' + (result.message || 'Erro desconhecido.'));
+        }
+      } catch (error) {
+        console.error('Erro ao atualizar pacote:', error);
+        alert('Erro de conexão ao salvar alterações.');
+      }
+    }
+
+    // ==========================================
+    // MODAL: CONFRONTO DE DUPLICIDADE
+    // ==========================================
+    let activeAlertId = null;
+
+    async function openConfronto(alertId) {
+      const alert = alertsCache[alertId];
+      if (!alert) {
+        console.error('Alerta não encontrado no cache:', alertId);
+        return;
+      }
+      confrontoMode = 'alert';
+      activeAlertId = alertId;
+      confrontoEditPackageId = null;
+      
+      const code = alert.codigo_conflito;
+      const newImgSrc = alert.caminho_imagem_nova;
+      
+      // Limpa os formulários
+      document.getElementById('confronto-old-edit-form').classList.add('hidden');
+      document.getElementById('confronto-old-data-box').classList.remove('hidden');
+      document.getElementById('btn-edit-old-confronto').classList.remove('hidden');
+
+      // Preenche os campos do novo pacote (direita)
+      document.getElementById('confronto-new-img').src = newImgSrc;
+      document.getElementById('confronto-new-input-code').value = code || '';
+      document.getElementById('confronto-new-input-sender').value = alert.remetente_sugerido || '';
+      document.getElementById('confronto-new-input-platform').value = alert.plataforma_sugerida || 'Shopee';
+
+      // Preenche coluna da esquerda (pacote antigo no banco)
+      try {
+        const response = await fetch(`/api/pacotes/conflito/${encodeURIComponent(code)}`);
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+          const oldPkg = result.data;
+          document.getElementById('confronto-old-id').innerText = `#${oldPkg.id}`;
+          document.getElementById('confronto-old-time').innerText = oldPkg.hora_coleta;
+          document.getElementById('confronto-old-code').innerText = oldPkg.codigo_pacote;
+          document.getElementById('confronto-old-platform').innerText = oldPkg.plataforma;
+          document.getElementById('confronto-old-sender').innerText = oldPkg.remetente_bruto;
+          document.getElementById('confronto-old-img').src = oldPkg.caminho_imagem;
+
+          // Salva referências para se for editar o antigo
+          document.getElementById('confronto-old-input-code').value = oldPkg.codigo_pacote;
+          document.getElementById('confronto-old-input-sender').value = oldPkg.remetente_bruto;
+          document.getElementById('confronto-old-input-platform').value = oldPkg.plataforma;
+
+          // Associa ID do pacote antigo ao form de alteração
+          document.getElementById('confronto-old-edit-form').dataset.pkgId = oldPkg.id;
+        } else {
+          // Se for uma falha de leitura geral que gerou alerta de leitura incompleta,
+          // o código conflito pode ser 'ERRO_PIPELINE' e não haver conflito no banco
+          document.getElementById('confronto-old-id').innerText = '-';
+          document.getElementById('confronto-old-time').innerText = '-';
+          document.getElementById('confronto-old-code').innerText = 'Sem conflito no banco';
+          document.getElementById('confronto-old-platform').innerText = 'NÃO IDENTIFICADO';
+          document.getElementById('confronto-old-sender').innerText = 'Alerta de Leitura Incompleta';
+          document.getElementById('confronto-old-img').src = '';
+          document.getElementById('btn-edit-old-confronto').classList.add('hidden');
+        }
+      } catch (err) {
+        console.error('Erro ao carregar pacote em conflito:', err);
+      }
+
+      // Restaura textos padrão dos botões
+      document.getElementById('btn-descartar-confronto').innerHTML = `
+        <span class="material-symbols-outlined text-[18px]">delete_forever</span> Descartar Nova Foto (Duplicada)
+      `;
+      document.getElementById('btn-confirmar-confronto').innerHTML = `
+        <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">check_circle</span> Confirmar e Gravar Novo Pacote
+      `;
+
+      // Mostra o modal
+      document.getElementById('modal-confronto').classList.remove('hidden');
+    }
+
+    async function openConfrontoEdit(pkgId, duplicateCode) {
+      confrontoMode = 'edit';
+      confrontoEditPackageId = pkgId;
+      activeAlertId = null;
+
+      // Recupera pacote atual do cache
+      const pkg = packagesCache[pkgId];
+      if (!pkg) {
+        console.error('Pacote a ser editado não encontrado no cache:', pkgId);
+        return;
+      }
+
+      // Fecha o modal de edição padrão
+      closeEditModal();
+
+      // Configura o modal de confronto para o cenário B
+      // Limpa os formulários
+      document.getElementById('confronto-old-edit-form').classList.add('hidden');
+      document.getElementById('confronto-old-data-box').classList.remove('hidden');
+      document.getElementById('btn-edit-old-confronto').classList.remove('hidden');
+
+      // Coluna da Direita (Nova Entrada - que na verdade é o pacote atual que estamos editando)
+      document.getElementById('confronto-new-img').src = pkg.caminho_imagem || '';
+      document.getElementById('confronto-new-input-code').value = duplicateCode || '';
+      document.getElementById('confronto-new-input-sender').value = document.getElementById('edit-pkg-sender').value || pkg.remetente_bruto;
+      document.getElementById('confronto-new-input-platform').value = document.getElementById('edit-pkg-platform').value || pkg.plataforma;
+
+      // Coluna da Esquerda (Pacote Existente no banco com o mesmo código)
+      try {
+        const response = await fetch(`/api/pacotes/conflito/${encodeURIComponent(duplicateCode)}`);
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+          const oldPkg = result.data;
+          document.getElementById('confronto-old-id').innerText = `#${oldPkg.id}`;
+          document.getElementById('confronto-old-time').innerText = oldPkg.hora_coleta;
+          document.getElementById('confronto-old-code').innerText = oldPkg.codigo_pacote;
+          document.getElementById('confronto-old-platform').innerText = oldPkg.plataforma;
+          document.getElementById('confronto-old-sender').innerText = oldPkg.remetente_bruto;
+          document.getElementById('confronto-old-img').src = oldPkg.caminho_imagem || '';
+
+          // Salva referências para se for editar o antigo
+          document.getElementById('confronto-old-input-code').value = oldPkg.codigo_pacote;
+          document.getElementById('confronto-old-input-sender').value = oldPkg.remetente_bruto;
+          document.getElementById('confronto-old-input-platform').value = oldPkg.plataforma;
+
+          // Associa ID do pacote antigo ao form de alteração
+          document.getElementById('confronto-old-edit-form').dataset.pkgId = oldPkg.id;
+        } else {
+          document.getElementById('confronto-old-id').innerText = '-';
+          document.getElementById('confronto-old-time').innerText = '-';
+          document.getElementById('confronto-old-code').innerText = 'Sem conflito no banco';
+          document.getElementById('confronto-old-platform').innerText = 'NÃO IDENTIFICADO';
+          document.getElementById('confronto-old-sender').innerText = 'Alerta de Leitura Incompleta';
+          document.getElementById('confronto-old-img').src = '';
+          document.getElementById('btn-edit-old-confronto').classList.add('hidden');
+        }
+      } catch (err) {
+        console.error('Erro ao carregar pacote em conflito:', err);
+      }
+
+      // Altera textos dos botões do footer para o cenário B
+      document.getElementById('btn-descartar-confronto').innerHTML = `
+        <span class="material-symbols-outlined text-[18px]">delete_forever</span> Excluir Pacote Duplicado
+      `;
+      document.getElementById('btn-confirmar-confronto').innerHTML = `
+        <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">check_circle</span> Salvar Alterações
+      `;
+
+      // Mostra o modal de confronto
+      document.getElementById('modal-confronto').classList.remove('hidden');
+    }
+
+    function closeConfrontoModal() {
+      document.getElementById('modal-confronto').classList.add('hidden');
+      activeAlertId = null;
+      confrontoEditPackageId = null;
+    }
+
+    // Habilita campos para editar o pacote antigo na coluna da esquerda
+    function enableConfrontoOldEdit() {
+      document.getElementById('confronto-old-data-box').classList.add('hidden');
+      document.getElementById('btn-edit-old-confronto').classList.add('hidden');
+      document.getElementById('confronto-old-edit-form').classList.remove('hidden');
+    }
+
+    // Salva a alteração feita no registro antigo (coluna esquerda)
+    async function saveOldPackageConfronto() {
+      const oldPkgId = document.getElementById('confronto-old-edit-form').dataset.pkgId;
+      const code = document.getElementById('confronto-old-input-code').value;
+      const sender = document.getElementById('confronto-old-input-sender').value;
+      const platform = document.getElementById('confronto-old-input-platform').value;
+
+      try {
+        const response = await fetch(`/api/pacotes/${oldPkgId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            codigo_pacote: code,
+            remetente_bruto: sender,
+            plataforma: platform
+          })
+        });
+
+        const result = await response.json();
+        if (response.ok && result.success) {
+          // Atualiza dados estáticos na tela do modal
+          document.getElementById('confronto-old-code').innerText = code;
+          document.getElementById('confronto-old-platform').innerText = platform;
+          document.getElementById('confronto-old-sender').innerText = sender;
+
+          // Esconde formulário de edição do antigo
+          document.getElementById('confronto-old-edit-form').classList.add('hidden');
+          document.getElementById('confronto-old-data-box').classList.remove('hidden');
+          document.getElementById('btn-edit-old-confronto').classList.remove('hidden');
+
+          alert('Pacote do banco de dados atualizado com sucesso. O código do conflito anterior foi liberado.');
+          fetchDashboardData();
+        } else {
+          alert('Erro ao atualizar pacote antigo: ' + (result.message || 'Erro desconhecido.'));
+        }
+      } catch (err) {
+        console.error('Erro de conexão:', err);
+      }
+    }
+
+    // BOTÃO DA DIREITA: Confirmar e Gravar Novo Pacote ou Salvar Alterações
+    document.getElementById('btn-confirmar-confronto').addEventListener('click', async () => {
+      if (confrontoMode === 'alert') {
+        if (!activeAlertId) return;
+
+        const code = document.getElementById('confronto-new-input-code').value;
+        const sender = document.getElementById('confronto-new-input-sender').value;
+        const platform = document.getElementById('confronto-new-input-platform').value;
+
+        if (!sender) {
+          alert('O nome do remetente é obrigatório para gravação do novo pacote.');
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/alertas/${activeAlertId}/confirmar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              codigo_pacote: code,
+              remetente_bruto: sender,
+              plataforma: platform
+            })
+          });
+
+          const result = await response.json();
+          if (response.ok && result.success) {
+            alert('Conflito resolvido! Novo pacote gravado com sucesso.');
+            closeConfrontoModal();
+            fetchDashboardData();
+          } else {
+            alert('Erro ao gravar novo pacote: ' + (result.message || 'Verifique se a duplicidade do código antigo já foi resolvida.'));
+          }
+        } catch (err) {
+          console.error('Erro de conexão:', err);
+        }
+      } else if (confrontoMode === 'edit') {
+        if (!confrontoEditPackageId) return;
+
+        const code = document.getElementById('confronto-new-input-code').value;
+        const sender = document.getElementById('confronto-new-input-sender').value;
+        const platform = document.getElementById('confronto-new-input-platform').value;
+
+        if (!sender) {
+          alert('O nome do remetente é obrigatório.');
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/pacotes/${confrontoEditPackageId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              codigo_pacote: code,
+              remetente_bruto: sender,
+              plataforma: platform
+            })
+          });
+
+          const result = await response.json();
+          if (response.ok && result.success) {
+            alert('Pacote atualizado com sucesso!');
+            closeConfrontoModal();
+            fetchDashboardData();
+            if (currentTab === 'historico') fetchHistory();
+          } else {
+            alert('Erro ao salvar alterações: ' + (result.message || 'Erro desconhecido.'));
+          }
+        } catch (err) {
+          console.error('Erro ao atualizar pacote:', err);
+          alert('Erro de conexão ao salvar alterações.');
+        }
+      }
+    });
+
+    // BOTÃO DA ESQUERDA: Descartar nova foto (Duplicada) ou Excluir Pacote Duplicado
+    document.getElementById('btn-descartar-confronto').addEventListener('click', async () => {
+      if (confrontoMode === 'alert') {
+        if (!activeAlertId) return;
+
+        if (!confirm('Tem certeza que deseja descartar esta nova foto? Ela será excluída permanentemente do disco.')) {
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/alertas/${activeAlertId}`, {
+            method: 'DELETE'
+          });
+
+          const result = await response.json();
+          if (response.ok && result.success) {
+            alert('Alerta descartado e foto removida do disco.');
+            closeConfrontoModal();
+            fetchDashboardData();
+          } else {
+            alert('Erro ao descartar alerta: ' + (result.message || 'Erro desconhecido.'));
+          }
+        } catch (err) {
+          console.error('Erro de conexão:', err);
+        }
+      } else if (confrontoMode === 'edit') {
+        if (!confrontoEditPackageId) return;
+
+        if (!confirm('Tem certeza que deseja excluir permanentemente este pacote duplicado? A imagem correspondente também será apagada do disco.')) {
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/pacotes/${confrontoEditPackageId}`, {
+            method: 'DELETE'
+          });
+
+          const result = await response.json();
+          if (response.ok && result.success) {
+            alert('Pacote e imagem excluídos com sucesso.');
+            closeConfrontoModal();
+            fetchDashboardData();
+            if (currentTab === 'historico') fetchHistory();
+          } else {
+            alert('Erro ao excluir pacote: ' + (result.message || 'Erro desconhecido.'));
+          }
+        } catch (err) {
+          console.error('Erro de conexão:', err);
+        }
+      }
+    });
+
+    // Inicialização da Dashboard no load
+    fetchDashboardData();
+    initSSE();
+  </script>
+</body>
+</html>
