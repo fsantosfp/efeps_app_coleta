@@ -26,9 +26,21 @@ echo [*] Abrindo o painel de administracao no navegador...
 start http://localhost:3000/admin
 
 echo.
+echo [*] Detectando o IP local deste Notebook...
+set LOCAL_IP=IP_DO_NOTEBOOK
+for /f "usebackq tokens=*" %%i in (`powershell -NoProfile -Command "(Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' -and $_.InterfaceAlias -notlike '*Loopback*' -and $_.InterfaceAlias -notlike '*vEthernet*' } | Select-Object -First 1).IPAddress"`) do (
+    set LOCAL_IP=%%i
+)
+
 echo =======================================================================
 echo  O Servidor esta rodando em segundo plano.
-echo  Acesse pelo celular no mesmo Wi-Fi usando o IP local do Notebook.
+echo.
+echo  Acesse pelo celular (no mesmo Wi-Fi) pelo link:
+echo  http://%LOCAL_IP%:3000/mobile
+echo.
+echo  Acesse o Painel Administrativo local pelo link:
+echo  http://localhost:3000/admin
+echo.
 echo  Para encerrar o servidor, feche esta janela do prompt de comando.
 echo =======================================================================
 echo.
