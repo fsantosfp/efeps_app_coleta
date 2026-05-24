@@ -605,7 +605,7 @@
   <div id="modal-edit-pacote" class="hidden fixed inset-0 z-50 flex items-center justify-center p-6 bg-surface-container-lowest/80 backdrop-blur-sm">
     <div class="bg-surface-container-low border border-outline-variant w-full max-w-3xl rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
       <div class="px-6 py-4 border-b border-outline-variant bg-surface-container flex justify-between items-center">
-        <h3 class="font-headline-sm text-headline-sm text-on-surface">Editar Pacote</h3>
+        <h3 class="font-headline-sm text-headline-sm text-on-surface" id="edit-modal-title">Editar Pacote</h3>
         <button onclick="closeEditModal()" class="text-on-surface-variant hover:text-on-surface">
           <span class="material-symbols-outlined">close</span>
         </button>
@@ -646,9 +646,16 @@
           </div>
         </div>
       </div>
-      <div class="px-6 py-4 border-t border-outline-variant bg-surface-container flex justify-end gap-3">
-        <button onclick="closeEditModal()" class="px-4 py-2 border border-outline text-on-surface rounded-lg font-label-md hover:bg-surface-container-high transition-colors">Cancelar</button>
-        <button onclick="saveEditPackage()" class="px-6 py-2 bg-primary text-on-primary font-bold rounded-lg hover:opacity-90 transition-colors font-label-md shadow-lg shadow-primary/10">Salvar Alterações</button>
+      <div class="px-6 py-4 border-t border-outline-variant bg-surface-container flex justify-between items-center gap-3">
+        <div>
+          <button id="btn-discard-edit-modal" onclick="discardAlertFromEditModal()" class="hidden px-4 py-2 border border-error text-error rounded-lg font-label-md hover:bg-error/10 transition-colors flex items-center gap-2">
+            <span class="material-symbols-outlined text-[18px]">delete_forever</span> Descartar Foto
+          </button>
+        </div>
+        <div class="flex gap-3">
+          <button onclick="closeEditModal()" class="px-4 py-2 border border-outline text-on-surface rounded-lg font-label-md hover:bg-surface-container-high transition-colors">Cancelar</button>
+          <button id="btn-save-edit-modal" onclick="saveEditPackage()" class="px-6 py-2 bg-primary text-on-primary font-bold rounded-lg hover:opacity-90 transition-colors font-label-md shadow-lg shadow-primary/10">Salvar Alterações</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1041,6 +1048,13 @@
         console.error('Pacote não encontrado no cache:', id);
         return;
       }
+      isResolvingIncompleteAlert = false;
+      activeAlertId = null;
+
+      document.getElementById('edit-modal-title').innerText = 'Editar Pacote';
+      document.getElementById('btn-save-edit-modal').innerText = 'Salvar Alterações';
+      document.getElementById('btn-discard-edit-modal').classList.add('hidden');
+
       document.getElementById('edit-pkg-id').value = pkg.id;
       document.getElementById('edit-pkg-code').value = pkg.codigo_pacote === 'NÃO IDENTIFICADO' ? '' : pkg.codigo_pacote;
       document.getElementById('edit-pkg-sender').value = pkg.remetente_bruto;
@@ -1063,6 +1077,36 @@
       const code = document.getElementById('edit-pkg-code').value;
       const sender = document.getElementById('edit-pkg-sender').value;
       const platform = document.getElementById('edit-pkg-platform').value;
+
+      if (isResolvingIncompleteAlert) {
+        if (!sender || sender.trim() === '') {
+          alert('O nome do remetente é obrigatório para gravação do novo pacote.');
+          return;
+        }
+        try {
+          const response = await fetch(`/api/alertas/${activeAlertId}/confirmar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              codigo_pacote: code,
+              remetente_bruto: sender,
+              plataforma: platform
+            })
+          });
+
+          const result = await response.json();
+          if (response.ok && result.success) {
+            closeEditModal();
+            fetchDashboardData();
+          } else {
+            alert('Erro ao gravar pacote: ' + (result.message || 'Erro desconhecido.'));
+          }
+        } catch (err) {
+          console.error('Erro ao resolver alerta:', err);
+          alert('Erro de conexão ao salvar alterações.');
+        }
+        return;
+      }
 
       try {
         const response = await fetch(`/api/pacotes/${id}`, {
@@ -1096,6 +1140,29 @@
     // MODAL: CONFRONTO DE DUPLICIDADE
     // ==========================================
     let activeAlertId = null;
+    let isResolvingIncompleteAlert = false;
+
+    async function discardAlertFromEditModal() {
+      if (!isResolvingIncompleteAlert || !activeAlertId) return;
+      if (!confirm('Tem certeza que deseja descartar esta foto? Ela será excluída permanentemente do disco.')) {
+        return;
+      }
+      try {
+        const response = await fetch(`/api/alertas/${activeAlertId}`, {
+          method: 'DELETE'
+        });
+        const result = await response.json();
+        if (response.ok && result.success) {
+          alert('Alerta descartado e foto removida do disco.');
+          closeEditModal();
+          fetchDashboardData();
+        } else {
+          alert('Erro ao descartar alerta: ' + (result.message || 'Erro desconhecido.'));
+        }
+      } catch (err) {
+        console.error('Erro de conexão:', err);
+      }
+    }
 
     async function openConfronto(alertId) {
       const alert = alertsCache[alertId];
@@ -1103,6 +1170,30 @@
         console.error('Alerta não encontrado no cache:', alertId);
         return;
       }
+
+      if (alert.tipo_erro === 'LEITURA_INCOMPLETA') {
+        // Para leitura incompleta, abre o modal de edição adaptado
+        isResolvingIncompleteAlert = true;
+        activeAlertId = alertId;
+
+        document.getElementById('edit-modal-title').innerText = 'Resolver Leitura Incompleta';
+        document.getElementById('btn-save-edit-modal').innerText = 'Confirmar e Gravar Pacote';
+        document.getElementById('btn-discard-edit-modal').classList.remove('hidden');
+
+        document.getElementById('edit-pkg-id').value = '';
+        document.getElementById('edit-pkg-code').value = alert.codigo_conflito && alert.codigo_conflito !== 'NÃO IDENTIFICADO' ? alert.codigo_conflito : '';
+        document.getElementById('edit-pkg-sender').value = alert.remetente_sugerido && alert.remetente_sugerido !== 'NÃO IDENTIFICADO' ? alert.remetente_sugerido : '';
+        document.getElementById('edit-pkg-platform').value = ['Shopee', 'Mercado Livre'].includes(alert.plataforma_sugerida) ? alert.plataforma_sugerida : 'Shopee';
+
+        const imgEl = document.getElementById('edit-pkg-img');
+        imgEl.classList.add('hidden');
+        document.getElementById('edit-pkg-placeholder').classList.remove('hidden');
+        imgEl.src = alert.caminho_imagem_nova || '';
+
+        document.getElementById('modal-edit-pacote').classList.remove('hidden');
+        return;
+      }
+
       confrontoMode = 'alert';
       activeAlertId = alertId;
       confrontoEditPackageId = null;
@@ -1143,8 +1234,6 @@
           // Associa ID do pacote antigo ao form de alteração
           document.getElementById('confronto-old-edit-form').dataset.pkgId = oldPkg.id;
         } else {
-          // Se for uma falha de leitura geral que gerou alerta de leitura incompleta,
-          // o código conflito pode ser 'ERRO_PIPELINE' e não haver conflito no banco
           document.getElementById('confronto-old-id').innerText = '-';
           document.getElementById('confronto-old-time').innerText = '-';
           document.getElementById('confronto-old-code').innerText = 'Sem conflito no banco';
