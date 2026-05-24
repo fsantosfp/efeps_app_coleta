@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0"
 title Sistema de Gestao de Coleta de Pacotes
 color 0A
 
