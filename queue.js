@@ -3,7 +3,7 @@ const path = require('path');
 const EventEmitter = require('events');
 const { db } = require('./database');
 const { performOCR, classifyTextWithGemini } = require('./pipeline');
-const { getSaoPauloDate, getSaoPauloTime } = require('./utils');
+const { getSaoPauloDate, getSaoPauloTime, isTransientError, retryWithBackoff } = require('./utils');
 
 const queueEvents = new EventEmitter();
 
@@ -58,11 +58,11 @@ async function processNext() {
   console.log(`[FILA] Iniciando processamento do arquivo: ${filename}`);
 
   try {
-    // 1. OCR (Vision API)
-    const ocrText = await performOCR(currentImagePath);
+    // 1. OCR (Vision API) com retentativa espaçada
+    const ocrText = await retryWithBackoff(() => performOCR(currentImagePath), 3, 2000);
     
-    // 2. Classificação Semântica (Gemini 1.5 Flash)
-    const metadata = await classifyTextWithGemini(ocrText);
+    // 2. Classificação Semântica (Gemini 1.5 Flash) com retentativa espaçada
+    const metadata = await retryWithBackoff(() => classifyTextWithGemini(ocrText), 3, 2000);
     console.log(`[FILA] Resultado da classificação para ${filename}:`, JSON.stringify(metadata));
 
     // 3. Validações e Persistência no Banco de Dados
@@ -111,15 +111,26 @@ async function processNext() {
   } catch (error) {
     console.error(`[FILA/ERRO] Falha crítica ao processar ${filename}:`, error.message);
     
-    // Tratamento de falha total do pipeline (salva como falha incompleta para revisão posterior)
+    // Se o erro for de conexão/API temporária (exauriu as retentativas do 503), salvamos como erro de serviço externo na DLQ
     try {
-      const stmt = db.prepare(`
-        INSERT INTO alertas_fila (tipo_erro, codigo_conflito, caminho_imagem_nova, data_criacao, remetente_sugerido, plataforma_sugerida)
-        VALUES ('LEITURA_INCOMPLETA', 'ERRO_PIPELINE', ?, ?, ?, ?)
-      `);
-      stmt.run(currentImagePath, getSaoPauloDate(), 'NÃO IDENTIFICADO', 'NÃO IDENTIFICADO');
+      if (isTransientError(error)) {
+        const stmt = db.prepare(`
+          INSERT INTO alertas_fila (tipo_erro, codigo_conflito, caminho_imagem_nova, data_criacao, remetente_sugerido, plataforma_sugerida)
+          VALUES ('ERRO_SERVICO_EXTERNO', ?, ?, ?, 'NÃO IDENTIFICADO', 'NÃO IDENTIFICADO')
+        `);
+        stmt.run(error.message || 'Erro temporário nas APIs externas', currentImagePath, getSaoPauloDate());
+        console.log(`[BANCO/ALERTA] Falha de serviço externo salva na DLQ (ERRO_SERVICO_EXTERNO) para ${filename}.`);
+      } else {
+        // Falha não temporária (ex: formato incorreto, falha total de processamento local)
+        const stmt = db.prepare(`
+          INSERT INTO alertas_fila (tipo_erro, codigo_conflito, caminho_imagem_nova, data_criacao, remetente_sugerido, plataforma_sugerida)
+          VALUES ('LEITURA_INCOMPLETA', 'ERRO_PIPELINE', ?, ?, ?, ?)
+        `);
+        stmt.run(currentImagePath, getSaoPauloDate(), 'NÃO IDENTIFICADO', 'NÃO IDENTIFICADO');
+        console.log(`[BANCO/ALERTA] Falha crítica não temporária gravada como LEITURA_INCOMPLETA.`);
+      }
     } catch (dbErr) {
-      console.error('[FILA/ERRO] Falha ao registrar alerta de falha de leitura no banco:', dbErr.message);
+      console.error('[FILA/ERRO] Falha ao registrar alerta no banco de dados:', dbErr.message);
     }
   } finally {
     totalProcessedToday++;

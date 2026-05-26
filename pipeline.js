@@ -2,6 +2,7 @@ const vision = require('@google-cloud/vision');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const fs = require('fs');
 const path = require('path');
+const { isTransientError } = require('./utils');
 require('dotenv').config();
 
 // Inicialização dos Clientes
@@ -47,21 +48,46 @@ if (process.env.GEMINI_API_KEY) {
  * Se o Vision não estiver configurado, retorna uma simulação baseada no nome do arquivo.
  */
 async function performOCR(imagePath) {
+  // Tratamento para simulação de erro 503 para testes locais
+  const filename = path.basename(imagePath).toLowerCase();
+  if (filename.includes('ocr_error503')) {
+    const error = new Error('Google Vision API Unavailable (503 Service Unavailable) [Simulado]');
+    error.code = 503;
+    throw error;
+  }
+
   // Tratamento para arquivos de teste pequenos (usados em verify.js) para garantir testes determinísticos
+  let isMock = false;
+  let mockContent = '';
   try {
     if (fs.existsSync(imagePath)) {
       const stats = fs.statSync(imagePath);
       if (stats.size < 1000) {
-        const content = fs.readFileSync(imagePath, 'utf8').toLowerCase();
-        if (content.includes('shopee')) {
-          return "REMETENTE: Loja Teste S.A.\nCódigo de rastreamento: BR883492834\nDestinatário: João Silva";
-        } else if (content.includes('ml') || content.includes('mercado') || content.includes('flex')) {
-          return "Mercado Livre FLEX\nRemetente: Loja Parceira #998372\nCódigo de barras: ML-482-9382";
-        }
+        isMock = true;
+        mockContent = fs.readFileSync(imagePath, 'utf8').toLowerCase();
       }
     }
   } catch (err) {
     console.warn('[OCR] Falha ao verificar arquivo mock de tamanho pequeno:', err.message);
+  }
+
+  if (isMock) {
+    if (mockContent.includes('ocr_error503')) {
+      const error = new Error('Google Vision API Unavailable (503 Service Unavailable) [Simulado]');
+      error.code = 503;
+      throw error;
+    }
+    if (mockContent.includes('gemini_error503') || filename.includes('gemini_error503')) {
+      return "REMETENTE: Loja Teste S.A.\nCódigo de rastreamento: BR883492834\nsimular_error503_gemini";
+    }
+    if (mockContent.includes('shopee_retry_success')) {
+      return "REMETENTE: Loja Teste S.A.\nCódigo de rastreamento: BR999999999\nDestinatário: João Silva";
+    }
+    if (mockContent.includes('shopee')) {
+      return "REMETENTE: Loja Teste S.A.\nCódigo de rastreamento: BR883492834\nDestinatário: João Silva";
+    } else if (mockContent.includes('ml') || mockContent.includes('mercado') || mockContent.includes('flex')) {
+      return "Mercado Livre FLEX\nRemetente: Loja Parceira #998372\nCódigo de barras: ML-482-9382";
+    }
   }
 
   if (!visionClient) {
@@ -69,6 +95,9 @@ async function performOCR(imagePath) {
 
     // Mock simples baseado em termos contidos no nome do arquivo original (caso não seja interceptado pelo tamanho)
     const lowerName = path.basename(imagePath).toLowerCase();
+    if (lowerName.includes('gemini_error503')) {
+      return "REMETENTE: Loja Teste S.A.\nCódigo de rastreamento: BR883492834\nsimular_error503_gemini";
+    }
     if (lowerName.includes('shopee')) {
       return "REMETENTE: Loja Teste S.A.\nCódigo de rastreamento: BR883492834\nDestinatário: João Silva";
     } else if (lowerName.includes('ml') || lowerName.includes('mercado') || lowerName.includes('flex')) {
@@ -123,6 +152,13 @@ function performLocalClassification(rawText) {
  * Envia o texto extraído para o Gemini 1.5 Flash para classificação estruturada.
  */
 async function classifyTextWithGemini(rawText) {
+  // Simulador de erro 503 para testes locais
+  if (rawText && typeof rawText === 'string' && rawText.includes('simular_error503_gemini')) {
+    const error = new Error('Google Gemini API Unavailable (503 Service Unavailable) [Simulado]');
+    error.status = 503;
+    throw error;
+  }
+
   if (!genAI) {
     console.log('[SIMULADO GEMINI] Classificando texto bruto localmente:', JSON.stringify(rawText));
     return performLocalClassification(rawText);
@@ -177,6 +213,10 @@ Retorne APENAS um objeto JSON válido correspondente ao seguinte esquema:
       plataforma: ['Shopee', 'Mercado Livre'].includes(data.plataforma) ? data.plataforma : 'NÃO IDENTIFICADO'
     };
   } catch (error) {
+    if (isTransientError(error)) {
+      console.error('Erro temporário ao processar classificação com Gemini, propagando para retentativa:', error.message);
+      throw error;
+    }
     console.error('Erro ao processar classificação com Gemini, caindo para classificação local resiliente:', error.message);
     return performLocalClassification(rawText);
   }

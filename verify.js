@@ -53,6 +53,50 @@ function deleteCall(url) {
   });
 }
 
+// Helper to make POST requests
+function post(url, body = {}) {
+  return new Promise((resolve, reject) => {
+    const postData = JSON.stringify(body);
+    const parsedUrl = new URL(url);
+    const req = http.request({
+      hostname: parsedUrl.hostname,
+      port: parsedUrl.port,
+      path: parsedUrl.pathname,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData)
+      }
+    }, (res) => {
+      let data = '';
+      res.on('data', (chunk) => data += chunk);
+      res.on('end', () => {
+        try {
+          resolve({ status: res.statusCode, body: JSON.parse(data) });
+        } catch (e) {
+          resolve({ status: res.statusCode, body: data });
+        }
+      });
+    });
+    req.on('error', reject);
+    req.write(postData);
+    req.end();
+  });
+}
+
+// Helper to poll queue status until it is completely empty
+async function waitUntilQueueIsEmpty() {
+  while (true) {
+    const dash = await get('http://localhost:3000/api/dashboard');
+    const q = dash.body.data.queue;
+    if (q.pending === 0 && q.processing === 0) {
+      break;
+    }
+    console.log(`[*] Fila ainda ativa: ${q.processedToday} de ${q.totalToday} processados (${q.pending} pendentes, ${q.processing} em processamento). Aguardando 1s...`);
+    await new Promise(r => setTimeout(r, 1000));
+  }
+}
+
 // Helper to post multipart form data (upload file)
 function uploadMockFile(url, fileName, fileContent) {
   return new Promise((resolve, reject) => {
@@ -110,9 +154,9 @@ async function runTests() {
   console.log('Status Code:', shopeeUpload.status);
   console.log('Response Body:', shopeeUpload.body);
   
-  // Aguarda 4 segundos para o processador de fila FIFO (simulado) classificar
-  console.log('\n[*] Aguardando 4 segundos para o processamento assíncrono do Gemini...');
-  await new Promise(r => setTimeout(r, 4000));
+  // Aguarda o processamento assíncrono da fila
+  console.log('\n[*] Aguardando processamento da fila...');
+  await waitUntilQueueIsEmpty();
   
   // 3. Teste GET /api/dashboard (Pós-upload)
   console.log('\n[TESTE 3] Lendo estado da Dashboard após processamento...');
@@ -131,9 +175,9 @@ async function runTests() {
   );
   console.log('Status Code:', shopeeUploadDup.status);
   
-  // Aguarda 4 segundos para processamento de duplicidade
-  console.log('\n[*] Aguardando 4 segundos...');
-  await new Promise(r => setTimeout(r, 4000));
+  // Aguarda o processamento da duplicidade na fila
+  console.log('\n[*] Aguardando processamento da duplicidade...');
+  await waitUntilQueueIsEmpty();
   
   // 5. Teste GET /api/dashboard (Verificando alerta de duplicidade)
   console.log('\n[TESTE 5] Verificando se o alerta de duplicidade foi gerado...');
@@ -252,10 +296,10 @@ async function runTests() {
   );
   console.log('Status Code:', incompleteUpload.status);
 
-  // Aguarda 4 segundos para o processamento assíncrono
-  console.log('\n[*] Aguardando 4 segundos para processamento de leitura incompleta...');
-  await new Promise(r => setTimeout(r, 4000));
-
+  // Aguarda o processamento de leitura incompleta
+  console.log('\n[*] Aguardando processamento de leitura incompleta...');
+  await waitUntilQueueIsEmpty();
+ 
   // Verifica se o alerta foi gerado
   const incompleteDash = await get('http://localhost:3000/api/dashboard');
   const alertList = incompleteDash.body.data.alerts;
@@ -264,6 +308,61 @@ async function runTests() {
     console.log('Sucesso: Alerta de leitura incompleta detectado no sino!', incompleteAlert);
   } else {
     console.error('ERRO: Alerta de leitura incompleta não foi gerado no sino.');
+  }
+
+  // 12. Teste de Retentativa Espaçada e Fila Morta (DLQ)
+  console.log('\n[TESTE 12] Testando sistema de retentativas e Dead Letter Queue (DLQ)...');
+  console.log('Enviando etiqueta com erro temporário simulado (ocr_error503)...');
+  const error503Upload = await uploadMockFile(
+    'http://localhost:3000/api/upload',
+    'ocr503.jpg',
+    'ocr_error503'
+  );
+  console.log('Upload Status Code:', error503Upload.status);
+
+  // Aguarda a exaustão das retentativas com backoff na fila
+  console.log('Aguardando retentativas espaçadas na fila...');
+  await waitUntilQueueIsEmpty();
+ 
+  // Verifica se o erro foi parar na DLQ (tipo_erro = 'ERRO_SERVICO_EXTERNO')
+  const dlqDash = await get('http://localhost:3000/api/dashboard');
+  const dlqAlerts = dlqDash.body.data.alerts;
+  const externalErrorAlert = dlqAlerts.find(a => a.tipo_erro === 'ERRO_SERVICO_EXTERNO');
+
+  if (externalErrorAlert) {
+    console.log('Sucesso: Alerta de serviço externo temporário registrado na DLQ!', externalErrorAlert);
+    
+    // Para testar a retentativa manual com sucesso:
+    // 1. Modificar o arquivo de imagem temporário no disco para simular que o serviço estabilizou
+    const relativeImgPath = externalErrorAlert.caminho_imagem_nova;
+    const filenameOnDisk = path.basename(relativeImgPath);
+    const absoluteImgPathOnDisk = path.join(__dirname, 'uploads', filenameOnDisk);
+    
+    console.log(`Corrigindo conteúdo do arquivo físico em ${absoluteImgPathOnDisk} para simular estabilização do serviço...`);
+    fs.writeFileSync(absoluteImgPathOnDisk, 'shopee_retry_success');
+    
+    // 2. Chamar o endpoint de retentativa manual
+    console.log(`Chamando endpoint de retentativa para o alerta #${externalErrorAlert.id}...`);
+    const retryResult = await post(`http://localhost:3000/api/alertas/${externalErrorAlert.id}/retry`);
+    console.log('Retry Status Code:', retryResult.status);
+    console.log('Retry Response Body:', retryResult.body);
+    
+    // 3. Aguardar processamento da retentativa na fila
+    console.log('Aguardando processamento da retentativa na fila...');
+    await waitUntilQueueIsEmpty();
+    
+    // 4. Verificar se o pacote foi cadastrado e o alerta removido
+    const finalDash = await get('http://localhost:3000/api/dashboard');
+    const hasAlertNow = finalDash.body.data.alerts.some(a => a.id === externalErrorAlert.id);
+    const addedPackage = finalDash.body.data.packages.find(p => p.caminho_imagem.includes(filenameOnDisk));
+    
+    if (!hasAlertNow && addedPackage) {
+      console.log('Sucesso: O alerta foi removido e o pacote foi cadastrado após a retentativa!', addedPackage);
+    } else {
+      console.error('ERRO: O alerta ainda persiste ou o pacote não foi cadastrado após a retentativa.');
+    }
+  } else {
+    console.error('ERRO: Alerta de ERRO_SERVICO_EXTERNO não foi gerado na DLQ após 10 segundos.');
   }
 
   console.log('\n=== FIM DOS TESTES DE INTEGRAÇÃO ===');
