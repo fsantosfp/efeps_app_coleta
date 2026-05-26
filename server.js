@@ -439,7 +439,7 @@ app.delete('/api/alertas/:id', (req, res) => {
 
     // Deleta o registro do banco
     db.prepare(`DELETE FROM alertas_fila WHERE id = ?`).run(id);
-
+ 
     broadcastEvent({ type: 'dashboard-update' });
     res.json({ success: true, message: 'Alerta e imagem correspondente removidos com sucesso!' });
   } catch (error) {
@@ -447,7 +447,41 @@ app.delete('/api/alertas/:id', (req, res) => {
     res.status(500).json({ success: false, message: 'Erro interno ao descartar alerta.' });
   }
 });
-
+ 
+/**
+ * POST /api/alertas/:id/retry
+ * Reprocessa um alerta da DLQ, enfileirando novamente a imagem física associada.
+ */
+app.post('/api/alertas/:id/retry', (req, res) => {
+  const { id } = req.params;
+ 
+  try {
+    const alert = db.prepare(`SELECT * FROM alertas_fila WHERE id = ?`).get(id);
+    if (!alert) {
+      return res.status(404).json({ success: false, message: 'Alerta não encontrado.' });
+    }
+ 
+    console.log(`[HTTP] Retentando processamento do alerta #${id}: ${alert.caminho_imagem_nova}`);
+ 
+    // Envia novamente para a fila de processamento assíncrono
+    enqueueImage(alert.caminho_imagem_nova);
+ 
+    // Remove o alerta da DLQ para não ficar pendente enquanto reprocessa
+    db.prepare(`DELETE FROM alertas_fila WHERE id = ?`).run(id);
+ 
+    // Atualiza o painel
+    broadcastEvent({ type: 'dashboard-update' });
+ 
+    res.json({
+      success: true,
+      message: 'Processamento reiniciado na fila em background.'
+    });
+  } catch (error) {
+    console.error(`Erro ao retentar processamento do alerta ${id}:`, error.message);
+    res.status(500).json({ success: false, message: 'Erro interno ao tentar reprocessar.' });
+  }
+});
+ 
 /**
  * GET /api/historico
  * Consulta retroativa de pacotes por data.

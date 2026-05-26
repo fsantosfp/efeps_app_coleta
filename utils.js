@@ -22,9 +22,56 @@ function formatToBrazilDate(dateStr) {
   return dateStr;
 }
 
+function isTransientError(error) {
+  if (!error) return false;
+  
+  // 1. Verificar propriedades de status HTTP ou gRPC
+  const code = error.code || error.status || error.statusCode;
+  if (code) {
+    // Códigos gRPC: 14 (UNAVAILABLE), 8 (RESOURCE_EXHAUSTED), 4 (DEADLINE_EXCEEDED)
+    // Códigos HTTP: 500, 502, 503, 504, 429
+    if ([4, 8, 14, 429, 500, 502, 503, 504].includes(Number(code))) {
+      return true;
+    }
+  }
+
+  // 2. Verificar substring da mensagem de erro (fallback)
+  const msg = error.message ? error.message.toLowerCase() : '';
+  const transientTerms = [
+    '503', '500', '502', '504', '429',
+    'service unavailable', 'resource exhausted', 'rate limit',
+    'quota', 'timeout', 'deadline exceeded', 'fetch failed',
+    'econnreset', 'econnrefused', 'etimedout', 'enotfound', 'eai_again'
+  ];
+
+  return transientTerms.some(term => msg.includes(term));
+}
+
+async function retryWithBackoff(fn, retries = 3, delay = 2000) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      const isTransient = isTransientError(error);
+      console.warn(`[RETRY] Falha na tentativa ${attempt}/${retries} de executar chamada externa. Erro temporário? ${isTransient ? 'Sim' : 'Não'}. Mensagem: "${error.message}"`);
+      
+      if (attempt === retries || !isTransient) {
+        throw error;
+      }
+      
+      // Backoff exponencial com Jitter aleatório (até 1000ms extra)
+      const backoff = delay * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 1000);
+      console.warn(`[RETRY] Aguardando ${backoff}ms antes de retentar...`);
+      await new Promise(resolve => setTimeout(resolve, backoff));
+    }
+  }
+}
+
 module.exports = {
   getSaoPauloDate,
   getSaoPauloTime,
   getSaoPauloDateTimeString,
-  formatToBrazilDate
+  formatToBrazilDate,
+  isTransientError,
+  retryWithBackoff
 };

@@ -827,20 +827,48 @@
             </div>
           `;
         } else {
-          alertasPageList.innerHTML = data.alerts.map(alert => `
-            <div class="flex items-center justify-between p-5 bg-error-container/10 border border-error/30 rounded-lg">
-              <div class="flex gap-4 items-center overflow-hidden">
-                <div class="w-10 h-10 rounded-full bg-error/20 flex items-center justify-center flex-shrink-0">
-                  <span class="material-symbols-outlined text-error">content_copy</span>
+          alertasPageList.innerHTML = data.alerts.map(alert => {
+            if (alert.tipo_erro === 'ERRO_SERVICO_EXTERNO') {
+              return `
+                <div class="flex items-center justify-between p-5 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                  <div class="flex gap-4 items-center overflow-hidden">
+                    <div class="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                      <span class="material-symbols-outlined text-amber-500">cloud_off</span>
+                    </div>
+                    <div class="overflow-hidden">
+                      <p class="font-label-md text-label-md text-amber-500 font-bold">Erro de Serviço Externo</p>
+                      <p class="text-body-sm text-on-surface-variant truncate" title="${alert.codigo_conflito || ''}">Falha: ${alert.codigo_conflito || 'API Indisponível'}</p>
+                    </div>
+                  </div>
+                  <div class="flex gap-2 flex-shrink-0 items-center">
+                    <button onclick="openImageModal('${alert.caminho_imagem_nova}')" class="p-2 hover:text-primary transition-colors text-on-surface-variant" title="Visualizar etiqueta">
+                      <span class="material-symbols-outlined text-[20px]">visibility</span>
+                    </button>
+                    <button onclick="retryAlert(${alert.id})" class="px-3 py-1.5 bg-amber-500 text-black rounded font-bold font-label-md text-xs hover:bg-amber-600 transition-colors flex items-center gap-1">
+                      <span class="material-symbols-outlined text-[16px]">sync</span> Retentar
+                    </button>
+                    <button onclick="deleteAlert(${alert.id})" class="p-2 text-error hover:bg-error/10 rounded transition-colors" title="Descartar">
+                      <span class="material-symbols-outlined text-[20px]">delete</span>
+                    </button>
+                  </div>
                 </div>
-                <div class="overflow-hidden">
-                  <p class="font-label-md text-label-md text-on-error-container font-bold">${alert.tipo_erro}</p>
-                  <p class="text-body-sm text-on-surface-variant truncate">Código Conflito: ${alert.codigo_conflito || 'NÃO IDENTIFICADO'}</p>
+              `;
+            }
+            return `
+              <div class="flex items-center justify-between p-5 bg-error-container/10 border border-error/30 rounded-lg">
+                <div class="flex gap-4 items-center overflow-hidden">
+                  <div class="w-10 h-10 rounded-full bg-error/20 flex items-center justify-center flex-shrink-0">
+                    <span class="material-symbols-outlined text-error">content_copy</span>
+                  </div>
+                  <div class="overflow-hidden">
+                    <p class="font-label-md text-label-md text-on-error-container font-bold">${alert.tipo_erro}</p>
+                    <p class="text-body-sm text-on-surface-variant truncate">Código Conflito: ${alert.codigo_conflito || 'NÃO IDENTIFICADO'}</p>
+                  </div>
                 </div>
+                <button onclick="openConfronto(${alert.id})" class="px-4 py-2 bg-error text-on-error rounded font-label-md text-label-md hover:bg-red-600 transition-colors flex-shrink-0">Resolver</button>
               </div>
-              <button onclick="openConfronto(${alert.id})" class="px-4 py-2 bg-error text-on-error rounded font-label-md text-label-md hover:bg-red-600 transition-colors flex-shrink-0">Resolver</button>
-            </div>
-          `).join('');
+            `;
+          }).join('');
         }
 
         // 5. Tabela de 50 Pacotes
@@ -1510,6 +1538,43 @@
         }
       }
     });
+
+    async function retryAlert(id) {
+      try {
+        const response = await fetch(`/api/alertas/${id}/retry`, {
+          method: 'POST'
+        });
+        const result = await response.json();
+        if (response.ok && result.success) {
+          fetchDashboardData();
+        } else {
+          alert('Erro ao reenviar alerta para fila: ' + (result.message || 'Erro desconhecido.'));
+        }
+      } catch (error) {
+        console.error('Erro ao retentar alerta:', error);
+        alert('Erro de conexão ao tentar reprocessar o alerta.');
+      }
+    }
+
+    async function deleteAlert(id) {
+      if (!confirm('Deseja realmente descartar este alerta? A imagem será excluída permanentemente do disco.')) {
+        return;
+      }
+      try {
+        const response = await fetch(`/api/alertas/${id}`, {
+          method: 'DELETE'
+        });
+        const result = await response.json();
+        if (response.ok && result.success) {
+          fetchDashboardData();
+        } else {
+          alert('Erro ao descartar alerta: ' + (result.message || 'Erro desconhecido.'));
+        }
+      } catch (error) {
+        console.error('Erro ao excluir alerta:', error);
+        alert('Erro de conexão ao tentar descartar o alerta.');
+      }
+    }
 
     // Inicialização da Dashboard no load
     fetchDashboardData();
