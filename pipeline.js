@@ -110,8 +110,10 @@ async function performOCR(imagePath) {
     const [result] = await visionClient.textDetection(imagePath);
     const detections = result.textAnnotations;
     if (detections && detections.length > 0) {
+      console.log(`[FILA] Resultado do OCR para ${imagePath}:`, detections[0].description);
       return detections[0].description;
     }
+    console.log(`[FILA] Resultado do OCR para ${imagePath}: Nenhum texto detectado.`);
     return '';
   } catch (error) {
     console.error(`Erro ao executar Vision OCR no arquivo ${imagePath}:`, error.message);
@@ -130,7 +132,7 @@ function performLocalClassification(rawText) {
   };
 
   const upperText = rawText.toUpperCase();
-  if (upperText.includes('REMETENTE') && upperText.includes('BR')) {
+  if (upperText.includes('REMETENTE')) {
     const match = rawText.match(/BR\d+/i);
     return {
       nome_remetente: 'Loja Teste S.A. (Simulado)',
@@ -138,10 +140,10 @@ function performLocalClassification(rawText) {
       plataforma: 'Shopee'
     };
   } else if (upperText.includes('FLEX') || upperText.includes('#')) {
-    const match = rawText.match(/ML-[\d-]+/i);
+    const match = rawText.match(/(?:ML-[\d-]+|Envio\s*\d+|\d{11})/i);
     return {
       nome_remetente: 'Loja Parceira #998372 (Simulado)',
-      codigo_pacote: match ? match[0].toUpperCase() : 'ML-482-9382',
+      codigo_pacote: match ? match[0].toUpperCase() : 'NÃO IDENTIFICADO',
       plataforma: 'Mercado Livre'
     };
   }
@@ -169,6 +171,10 @@ async function classifyTextWithGemini(rawText) {
       model: "gemini-2.5-flash",
       generationConfig: {
         responseMimeType: "application/json",
+        temperature: 0,
+        thinkingConfig: {
+          thinkingBudget: 0
+        }
       }
     });
 
@@ -179,14 +185,19 @@ Sua tarefa é analisar o texto extraído por OCR de uma etiqueta e extrair estru
 - codigo_pacote: String (ou null se não encontrado)
 - plataforma: String (valores aceitos: 'Shopee', 'Mercado Livre' ou 'NÃO IDENTIFICADO')
 
-Regras estritas para código do pacote:
-1. Os códigos do Mercado Livre estão em "Envio" seguidos de valores numéricos.
-2. Os códigos da Shopee começam com "BR" seguido de valores numéricos.
+Regras de extração para cada campo:
+1. nome_remetente: Identifique o nome do remetente na seção de REMETENTE. Se o nome estiver ilegível, rasgado ou ausente, defina como 'NÃO IDENTIFICADO'.
+2. codigo_pacote: Identifique o código de rastreamento/pacote.
+   - Para Shopee, o código começa estritamente com os caracteres "BR" seguido de valores numéricos (ex: BR2164448398492).
+   - Para Mercado Livre, use o identificador numérico de envio (ex: 47099111704).
+   Si o código estiver ausente ou ilegível, defina como 'NÃO IDENTIFICADO'. Nunca use o número do pedido (Pedido:) como código do pacote.
+3. plataforma: Classifique como 'Shopee' ou 'Mercado Livre' com base nas características do texto:
+   - Shopee: Deve conter o termo delimitador "REMETENTE" (ou variação clara de remetente) na seção inferior da etiqueta, layout de entrega direta ou código de rastreamento iniciando com "BR".
+   - Mercado Livre: Deve conter o caractere "#" colado ao identificador numérico da loja na linha do remetente (exemplo: "Cliente Exemplo #131056") OU conter a palavra "FLEX" (referente à logística expressa do Mercado Livre).
+   Se não for possível identificar a plataforma, defina como 'NÃO IDENTIFICADO'.
 
-Regras estritas de classificação de plataforma:
-1. Shopee: Deve conter o termo delimitador "REMETENTE" (ou variação clara de remetente) na seção inferior da etiqueta e o código de rastreamento/pacote iniciando estritamente com os caracteres "BR" (ex: BR2164448398492).
-2. Mercado Livre: Deve conter o caractere "#" colado ao identificador numérico da loja na linha do remetente (exemplo: "Cliente Exemplo #131056") OU conter a palavra "FLEX" (referente à logística expressa do Mercado Livre).
-3. Se o texto não se enquadrar nas regras 1 e 2, for rasgado, borrado ou inconclusivo, defina "plataforma" como "NÃO IDENTIFICADO", "nome_remetente" como "NÃO IDENTIFICADO" and "codigo_pacote" como "NÃO IDENTIFICADO".
+AVALIAÇÃO INDEPENDENTE:
+Cada campo deve ser avaliado individualmente. Se um campo estiver ilegível (por exemplo, o código do pacote começar com BR estiver ausente ou rasgado), os demais campos que puderem ser identificados (como o nome do remetente ou a plataforma) devem ser extraídos normalmente. NÃO zere ou classifique os outros campos como 'NÃO IDENTIFICADO' apenas porque um deles está ausente.
 
 Retorne APENAS um objeto JSON válido correspondente ao seguinte esquema:
 {

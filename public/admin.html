@@ -854,6 +854,35 @@
                 </div>
               `;
             }
+            if (alert.tipo_erro === 'LEITURA_INCOMPLETA') {
+              return `
+                <div class="flex items-center justify-between p-5 bg-error-container/10 border border-error/30 rounded-lg">
+                  <div class="flex gap-4 items-center overflow-hidden">
+                    <div class="w-10 h-10 rounded-full bg-error/20 flex items-center justify-center flex-shrink-0">
+                      <span class="material-symbols-outlined text-error">help</span>
+                    </div>
+                    <div class="overflow-hidden">
+                      <p class="font-label-md text-label-md text-on-error-container font-bold">Leitura Incompleta</p>
+                      <p class="text-body-sm text-on-surface-variant truncate">Informação não identificada</p>
+                    </div>
+                  </div>
+                  <div class="flex gap-2 flex-shrink-0 items-center">
+                    <button onclick="openImageModal('${alert.caminho_imagem_nova}')" class="p-2 hover:text-primary transition-colors text-on-surface-variant" title="Visualizar etiqueta">
+                      <span class="material-symbols-outlined text-[20px]">visibility</span>
+                    </button>
+                    <button onclick="retryAlert(${alert.id})" class="px-3 py-1.5 bg-amber-500 text-black rounded font-bold font-label-md text-xs hover:bg-amber-600 transition-colors flex items-center gap-1" title="Retentar leitura">
+                      <span class="material-symbols-outlined text-[16px]">sync</span> Retentar
+                    </button>
+                    <button onclick="openConfronto(${alert.id})" class="px-4 py-2 bg-error text-on-error rounded font-label-md text-label-md hover:bg-red-600 transition-colors flex-shrink-0" title="Resolver manualmente">
+                      Resolver
+                    </button>
+                    <button onclick="deleteAlert(${alert.id})" class="p-2 text-error hover:bg-error/10 rounded transition-colors" title="Descartar">
+                      <span class="material-symbols-outlined text-[20px]">delete</span>
+                    </button>
+                  </div>
+                </div>
+              `;
+            }
             return `
               <div class="flex items-center justify-between p-5 bg-error-container/10 border border-error/30 rounded-lg">
                 <div class="flex gap-4 items-center overflow-hidden">
