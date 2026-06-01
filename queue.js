@@ -24,7 +24,7 @@ function enqueueImage(imagePath) {
   fileQueue.push(imagePath);
   totalEnqueuedToday++;
   console.log(`[FILA] Item adicionado. Fila atual: ${fileQueue.length} pendentes.`);
-  
+
   // Dispara o processamento se houver capacidade
   if (activeWorkers < MAX_CONCURRENT_WORKERS) {
     processNext();
@@ -59,16 +59,18 @@ async function processNext() {
 
   try {
     // 1. OCR (Vision API) com retentativa espaçada
+    console.log(`[FILA] OCR para ${filename}`);
     const ocrText = await retryWithBackoff(() => performOCR(currentImagePath), 3, 2000);
-    
+
     // 2. Classificação Semântica (Gemini 1.5 Flash) com retentativa espaçada
+    console.log(`[FILA] Classificacao para ${filename}`);
     const metadata = await retryWithBackoff(() => classifyTextWithGemini(ocrText), 3, 2000);
     console.log(`[FILA] Resultado da classificação para ${filename}:`, JSON.stringify(metadata));
 
     // 3. Validações e Persistência no Banco de Dados
     const today = getSaoPauloDate();
 
-    const hasMissingData = 
+    const hasMissingData =
       !metadata.codigo_pacote || metadata.codigo_pacote.trim() === '' || metadata.codigo_pacote === 'NÃO IDENTIFICADO' ||
       !metadata.nome_remetente || metadata.nome_remetente.trim() === '' || metadata.nome_remetente === 'NÃO IDENTIFICADO' ||
       !metadata.plataforma || metadata.plataforma.trim() === '' || metadata.plataforma === 'NÃO IDENTIFICADO';
@@ -110,7 +112,7 @@ async function processNext() {
     }
   } catch (error) {
     console.error(`[FILA/ERRO] Falha crítica ao processar ${filename}:`, error.message);
-    
+
     // Se o erro for de conexão/API temporária (exauriu as retentativas do 503), salvamos como erro de serviço externo na DLQ
     try {
       if (isTransientError(error)) {
