@@ -2,7 +2,7 @@ const vision = require('@google-cloud/vision');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const fs = require('fs');
 const path = require('path');
-const { isTransientError } = require('./utils');
+const { isTransientError } = require('../utils/helpers');
 require('dotenv').config();
 
 // Inicialização dos Clientes
@@ -45,10 +45,9 @@ if (process.env.GEMINI_API_KEY) {
 
 /**
  * Executa OCR na imagem informada utilizando o Google Vision API.
- * Se o Vision não estiver configurado, retorna uma simulação baseada no nome do arquivo.
+ * Se o Vision não estiver configurado, retorna uma simulação baseada no nome do arquivo ou conteúdo do mock.
  */
 async function performOCR(imagePath) {
-  // Tratamento para simulação de erro 503 para testes locais
   const filename = path.basename(imagePath).toLowerCase();
   if (filename.includes('ocr_error503')) {
     const error = new Error('Google Vision API Unavailable (503 Service Unavailable) [Simulado]');
@@ -93,7 +92,6 @@ async function performOCR(imagePath) {
   if (!visionClient) {
     console.log(`[SIMULADO OCR] Processando imagem: ${path.basename(imagePath)}`);
 
-    // Mock simples baseado em termos contidos no nome do arquivo original (caso não seja interceptado pelo tamanho)
     const lowerName = path.basename(imagePath).toLowerCase();
     if (lowerName.includes('gemini_error503')) {
       return "REMETENTE: Loja Teste S.A.\nCódigo de rastreamento: BR883492834\nsimular_error503_gemini";
@@ -154,7 +152,6 @@ function performLocalClassification(rawText) {
  * Envia o texto extraído para o Gemini 1.5 Flash para classificação estruturada.
  */
 async function classifyTextWithGemini(rawText) {
-  // Simulador de erro 503 para testes locais
   if (rawText && typeof rawText === 'string' && rawText.includes('simular_error503_gemini')) {
     const error = new Error('Google Gemini API Unavailable (503 Service Unavailable) [Simulado]');
     error.status = 503;
@@ -217,7 +214,6 @@ Retorne APENAS um objeto JSON válido correspondente ao seguinte esquema:
     const responseText = result.response.text().trim();
     const data = JSON.parse(responseText);
 
-    // Normalização básica dos campos
     return {
       nome_remetente: data.nome_remetente || 'NÃO IDENTIFICADO',
       codigo_pacote: data.codigo_pacote || 'NÃO IDENTIFICADO',

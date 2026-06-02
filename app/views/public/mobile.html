@@ -258,36 +258,6 @@
       }
     }
 
-    function showSuccessModal() {
-      const overlay = document.getElementById('success-overlay');
-      overlay.classList.remove('translate-y-full', 'pointer-events-none');
-      triggerHaptic([20, 50, 20]);
-    }
-
-    function reopenCamera() {
-      resetFlow();
-      // Simula clique automático para abrir a câmera imediatamente
-      setTimeout(() => {
-        document.getElementById('capture-input').click();
-      }, 300);
-    }
-
-    function resetFlow() {
-      const overlay = document.getElementById('success-overlay');
-      overlay.classList.add('translate-y-full', 'pointer-events-none');
-      
-      const buttonContent = document.getElementById('capture-button-content');
-      const spinner = document.getElementById('upload-spinner');
-      const label = document.getElementById('capture-label');
-
-      buttonContent.classList.remove('hidden');
-      spinner.classList.add('hidden');
-      label.classList.remove('pointer-events-none');
-
-      // Limpa input
-      document.getElementById('capture-input').value = "";
-    }
-
     // Monitoramento simples de rede local (online/offline)
     window.addEventListener('online', () => {
       document.getElementById('wifi-icon').className = "material-symbols-outlined text-secondary";

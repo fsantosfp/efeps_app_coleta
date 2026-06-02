@@ -1,14 +1,15 @@
 const fs = require('fs');
 const path = require('path');
 
-const logFile = path.join(__dirname, 'app.log');
+// Aponta para o arquivo de log no diretório raiz do projeto
+const logFile = path.resolve(__dirname, '..', '..', 'app.log');
 
 // Rotatividade de Logs: se o arquivo passar de 10MB, renomeia para backup e inicia um novo
 if (fs.existsSync(logFile)) {
   try {
     const stats = fs.statSync(logFile);
     if (stats.size > 10 * 1024 * 1024) { // 10MB
-      const backupFile = path.join(__dirname, 'app.old.log');
+      const backupFile = path.resolve(__dirname, '..', '..', 'app.old.log');
       if (fs.existsSync(backupFile)) {
         fs.unlinkSync(backupFile);
       }
