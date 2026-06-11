@@ -19,9 +19,11 @@ let totalProcessedToday = 0;
 /**
  * Adiciona um arquivo de imagem à fila de processamento.
  * @param {string} imagePath Caminho completo da imagem no disco.
+ * @param {string|null} originalDate Data original da coleta (YYYY-MM-DD). Null = usa a data atual.
+ * @param {string|null} originalTime Horário original da coleta (HH:MM:SS). Null = usa o horário atual.
  */
-function enqueueImage(imagePath) {
-  fileQueue.push(imagePath);
+function enqueueImage(imagePath, originalDate = null, originalTime = null) {
+  fileQueue.push({ imagePath, originalDate, originalTime });
   totalEnqueuedToday++;
   console.log(`[FILA] Item adicionado. Fila atual: ${fileQueue.length} pendentes.`);
 
@@ -53,9 +55,13 @@ async function processNext() {
   }
 
   activeWorkers++;
-  const currentImagePath = fileQueue.shift();
+  const item = fileQueue.shift();
+  const currentImagePath = item.imagePath;
   const filename = path.basename(currentImagePath);
-  console.log(`[FILA] Iniciando processamento do arquivo: ${filename}`);
+  // Preserva data/hora original da coleta se fornecida (caso de retry manual)
+  const collectDate = item.originalDate || getSaoPauloDate();
+  const collectTime = item.originalTime || getSaoPauloTime();
+  console.log(`[FILA] Iniciando processamento do arquivo: ${filename} (data coleta: ${collectDate} ${collectTime})`);
 
   try {
     // 1. OCR (Vision API) com retentativa espaçada
@@ -68,8 +74,6 @@ async function processNext() {
     console.log(`[FILA] Resultado da classificação para ${filename}:`, JSON.stringify(metadata));
 
     // 3. Validações e Persistência no Banco de Dados
-    const today = getSaoPauloDate();
-
     const hasMissingData =
       !metadata.codigo_pacote || metadata.codigo_pacote.trim() === '' || metadata.codigo_pacote === 'NÃO IDENTIFICADO' ||
       !metadata.nome_remetente || metadata.nome_remetente.trim() === '' || metadata.nome_remetente === 'NÃO IDENTIFICADO' ||
@@ -81,14 +85,15 @@ async function processNext() {
         tipo_erro: 'LEITURA_INCOMPLETA',
         codigo_conflito: metadata.codigo_pacote,
         caminho_imagem_nova: currentImagePath,
-        data_criacao: today,
+        data_criacao: collectDate,
+        hora_criacao: collectTime,
         remetente_sugerido: metadata.nome_remetente,
         plataforma_sugerida: metadata.plataforma
       });
       console.log(`[BANCO/ALERTA] Identificação incompleta detectada para pacote. Alerta 'LEITURA_INCOMPLETA' criado.`);
     } else {
-      // Identificado com sucesso: verificar duplicidade na data atual (hoje)
-      const existing = Pacote.findDuplicate(metadata.codigo_pacote, today);
+      // Identificado com sucesso: verificar duplicidade na data original da coleta
+      const existing = Pacote.findDuplicate(metadata.codigo_pacote, collectDate);
 
       if (existing) {
         // Conflito de Duplicidade: Grava na tabela de alertas de fila
@@ -96,22 +101,23 @@ async function processNext() {
           tipo_erro: 'DUPLICIDADE',
           codigo_conflito: metadata.codigo_pacote,
           caminho_imagem_nova: currentImagePath,
-          data_criacao: today,
+          data_criacao: collectDate,
+          hora_criacao: collectTime,
           remetente_sugerido: metadata.nome_remetente,
           plataforma_sugerida: metadata.plataforma
         });
         console.log(`[BANCO/ALERTA] Duplicidade detectada para código ${metadata.codigo_pacote}. Alerta 'DUPLICIDADE' criado.`);
       } else {
-        // Sem conflito: Grava na tabela principal de pacotes
+        // Sem conflito: Grava na tabela principal de pacotes com a data/hora original da coleta
         Pacote.create({
           codigo_pacote: metadata.codigo_pacote,
           remetente_bruto: metadata.nome_remetente,
           plataforma: metadata.plataforma,
           caminho_imagem: currentImagePath,
-          data_coleta: today,
-          hora_coleta: getSaoPauloTime()
+          data_coleta: collectDate,
+          hora_coleta: collectTime
         });
-        console.log(`[BANCO] Pacote gravado com sucesso: ${metadata.codigo_pacote}`);
+        console.log(`[BANCO] Pacote gravado com sucesso: ${metadata.codigo_pacote} (data: ${collectDate} ${collectTime})`);
       }
     }
   } catch (error) {
@@ -124,7 +130,8 @@ async function processNext() {
           tipo_erro: 'ERRO_SERVICO_EXTERNO',
           codigo_conflito: error.message || 'Erro temporário nas APIs externas',
           caminho_imagem_nova: currentImagePath,
-          data_criacao: getSaoPauloDate(),
+          data_criacao: collectDate,
+          hora_criacao: collectTime,
           remetente_sugerido: 'NÃO IDENTIFICADO',
           plataforma_sugerida: 'NÃO IDENTIFICADO'
         });
@@ -135,7 +142,8 @@ async function processNext() {
           tipo_erro: 'LEITURA_INCOMPLETA',
           codigo_conflito: 'ERRO_PIPELINE',
           caminho_imagem_nova: currentImagePath,
-          data_criacao: getSaoPauloDate(),
+          data_criacao: collectDate,
+          hora_criacao: collectTime,
           remetente_sugerido: 'NÃO IDENTIFICADO',
           plataforma_sugerida: 'NÃO IDENTIFICADO'
         });

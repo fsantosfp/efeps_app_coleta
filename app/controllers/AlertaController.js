@@ -93,6 +93,8 @@ class AlertaController {
 
   /**
    * Reprocessa um alerta da DLQ, enfileirando novamente a imagem física associada.
+   * Preserva a data e hora originais da coleta para garantir que o registro
+   * seja salvo com a data em que a foto foi tirada, não do momento do retry.
    */
   static retry(req, res) {
     const { id } = req.params;
@@ -103,10 +105,11 @@ class AlertaController {
         return res.status(404).json({ success: false, message: 'Alerta não encontrado.' });
       }
 
-      console.log(`[HTTP] Retentando processamento do alerta #${id}: ${alert.caminho_imagem_nova}`);
+      console.log(`[HTTP] Retentando processamento do alerta #${id}: ${alert.caminho_imagem_nova} (data original: ${alert.data_criacao} ${alert.hora_criacao || 'N/A'})`);
 
-      // Envia novamente para a fila de processamento assíncrono
-      enqueueImage(alert.caminho_imagem_nova);
+      // Envia novamente para a fila de processamento assíncrono,
+      // passando a data e hora originais da coleta para preservar o registro correto.
+      enqueueImage(alert.caminho_imagem_nova, alert.data_criacao, alert.hora_criacao || null);
 
       // Remove o alerta da DLQ para não ficar pendente enquanto reprocessa
       AlertaFila.delete(id);
@@ -121,6 +124,40 @@ class AlertaController {
     } catch (error) {
       console.error(`Erro ao retentar processamento do alerta ${id}:`, error.message);
       res.status(500).json({ success: false, message: 'Erro interno ao tentar reprocessar.' });
+    }
+  }
+
+  /**
+   * Reprocessa todos os alertas da DLQ de uma vez.
+   * Cada alerta é reenfileirado com sua data e hora originais de coleta.
+   */
+  static retryAll(req, res) {
+    try {
+      const alerts = AlertaFila.findAll();
+
+      if (alerts.length === 0) {
+        return res.json({ success: true, message: 'Nenhum alerta pendente para reprocessar.', total: 0 });
+      }
+
+      console.log(`[HTTP] Retry All: reenfileirando ${alerts.length} alerta(s) da DLQ.`);
+
+      for (const alert of alerts) {
+        console.log(`[HTTP] Retry All → alerta #${alert.id}: ${alert.caminho_imagem_nova} (data original: ${alert.data_criacao} ${alert.hora_criacao || 'N/A'})`);
+        enqueueImage(alert.caminho_imagem_nova, alert.data_criacao, alert.hora_criacao || null);
+        AlertaFila.delete(alert.id);
+      }
+
+      // Atualiza o painel uma única vez após enfileirar todos
+      DashboardController.broadcastEvent({ type: 'dashboard-update' });
+
+      res.json({
+        success: true,
+        message: `${alerts.length} alerta(s) reenfileirado(s) para reprocessamento.`,
+        total: alerts.length
+      });
+    } catch (error) {
+      console.error('Erro ao executar retry de todos os alertas:', error.message);
+      res.status(500).json({ success: false, message: 'Erro interno ao tentar reprocessar todos os alertas.' });
     }
   }
 }

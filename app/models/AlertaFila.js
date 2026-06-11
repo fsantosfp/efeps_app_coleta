@@ -7,12 +7,12 @@ class AlertaFila {
    * @returns {Object} Resultado do run.
    */
   static create(data) {
-    const { tipo_erro, codigo_conflito, caminho_imagem_nova, data_criacao, remetente_sugerido, plataforma_sugerida } = data;
+    const { tipo_erro, codigo_conflito, caminho_imagem_nova, data_criacao, hora_criacao, remetente_sugerido, plataforma_sugerida } = data;
     const stmt = db.prepare(`
-      INSERT INTO alertas_fila (tipo_erro, codigo_conflito, caminho_imagem_nova, data_criacao, remetente_sugerido, plataforma_sugerida)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO alertas_fila (tipo_erro, codigo_conflito, caminho_imagem_nova, data_criacao, hora_criacao, remetente_sugerido, plataforma_sugerida)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
-    return stmt.run(tipo_erro, codigo_conflito, caminho_imagem_nova, data_criacao, remetente_sugerido, plataforma_sugerida);
+    return stmt.run(tipo_erro, codigo_conflito, caminho_imagem_nova, data_criacao, hora_criacao ?? null, remetente_sugerido, plataforma_sugerida);
   }
 
   /**
@@ -39,7 +39,7 @@ class AlertaFila {
    */
   static findAll() {
     return db.prepare(`
-      SELECT id, tipo_erro, codigo_conflito, caminho_imagem_nova, data_criacao, remetente_sugerido, plataforma_sugerida 
+      SELECT id, tipo_erro, codigo_conflito, caminho_imagem_nova, data_criacao, hora_criacao, remetente_sugerido, plataforma_sugerida 
       FROM alertas_fila 
       ORDER BY id DESC
     `).all();

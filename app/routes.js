@@ -32,6 +32,7 @@ router.get('/api/clientes', PacoteController.getClients);
 // API Alertas
 router.post('/api/alertas/:id/confirmar', AlertaController.confirm);
 router.delete('/api/alertas/:id', AlertaController.delete);
+router.post('/api/alertas/retry-all', AlertaController.retryAll);
 router.post('/api/alertas/:id/retry', AlertaController.retry);
 
 // API Relatórios

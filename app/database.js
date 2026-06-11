@@ -39,6 +39,7 @@ const initDb = () => {
       codigo_conflito TEXT,
       caminho_imagem_nova TEXT NOT NULL,
       data_criacao TEXT NOT NULL DEFAULT (date('now', 'localtime')),
+      hora_criacao TEXT,
       remetente_sugerido TEXT,
       plataforma_sugerida TEXT
     );
@@ -75,6 +76,11 @@ const initDb = () => {
   }
   try {
     db.exec("ALTER TABLE alertas_fila ADD COLUMN plataforma_sugerida TEXT;");
+  } catch (e) {
+    // A coluna já existe
+  }
+  try {
+    db.exec("ALTER TABLE alertas_fila ADD COLUMN hora_criacao TEXT;");
   } catch (e) {
     // A coluna já existe
   }

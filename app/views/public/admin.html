@@ -447,9 +447,14 @@
               <span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">warning</span>
               <h4 class="font-headline-sm text-headline-sm text-on-surface">Alertas Operacionais Pendentes</h4>
             </div>
-            <button onclick="fetchDashboardData()" class="flex items-center gap-2 px-3 py-1.5 bg-surface-container-high border border-outline rounded-lg text-body-sm hover:bg-surface-container-highest transition-colors">
-              <span class="material-symbols-outlined text-[16px]">refresh</span> Atualizar
-            </button>
+            <div class="flex items-center gap-2">
+              <button id="btn-retry-all" onclick="retryAllAlerts()" class="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/40 text-amber-400 rounded-lg text-body-sm font-bold hover:bg-amber-500/20 transition-colors">
+                <span class="material-symbols-outlined text-[16px]">sync</span> Retry All
+              </button>
+              <button onclick="fetchDashboardData()" class="flex items-center gap-2 px-3 py-1.5 bg-surface-container-high border border-outline rounded-lg text-body-sm hover:bg-surface-container-highest transition-colors">
+                <span class="material-symbols-outlined text-[16px]">refresh</span> Atualizar
+              </button>
+            </div>
           </div>
           <p class="text-body-sm text-on-surface-variant mb-6">Aqui são exibidas as anomalias de OCR ou duplicidades de pacotes detectadas hoje que necessitam de intervenção manual para garantir a acurácia dos dados.</p>
           <div id="alertas-page-list" class="grid grid-cols-1 md:grid-cols-2 gap-space-4">
@@ -1582,6 +1587,47 @@
       } catch (error) {
         console.error('Erro ao retentar alerta:', error);
         alert('Erro de conexão ao tentar reprocessar o alerta.');
+      }
+    }
+
+    async function retryAllAlerts() {
+      const btn = document.getElementById('btn-retry-all');
+      const count = document.querySelectorAll('#alertas-page-list > div').length;
+
+      if (count === 0) {
+        alert('Não há alertas pendentes para reprocessar.');
+        return;
+      }
+
+      if (!confirm(`Deseja reenfileirar todos os ${count} alerta(s) para reprocessamento automático?\n\nCada alerta será reprocessado com a data e hora originais da coleta.`)) {
+        return;
+      }
+
+      // Feedback visual: desabilita o botão durante a operação
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> Processando...';
+      }
+
+      try {
+        const response = await fetch('/api/alertas/retry-all', {
+          method: 'POST'
+        });
+        const result = await response.json();
+        if (response.ok && result.success) {
+          console.log(`[RETRY ALL] ${result.message}`);
+          fetchDashboardData();
+        } else {
+          alert('Erro ao executar Retry All: ' + (result.message || 'Erro desconhecido.'));
+        }
+      } catch (error) {
+        console.error('Erro ao executar Retry All:', error);
+        alert('Erro de conexão ao tentar reprocessar todos os alertas.');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">sync</span> Retry All';
+        }
       }
     }
 
