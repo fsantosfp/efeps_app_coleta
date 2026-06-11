@@ -4,7 +4,8 @@ const fs = require('fs');
 require('dotenv').config();
 
 const dbPath = process.env.DATABASE_PATH || 'coleta.db';
-const absoluteDbPath = path.isAbsolute(dbPath) ? dbPath : path.join(__dirname, dbPath);
+// Garante que o banco seja criado na raiz do projeto
+const absoluteDbPath = path.isAbsolute(dbPath) ? dbPath : path.resolve(__dirname, '..', dbPath);
 
 // Garante que o diretório do banco de dados existe
 const dbDir = path.dirname(absoluteDbPath);

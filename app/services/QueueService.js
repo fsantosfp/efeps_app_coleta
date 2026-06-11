@@ -1,9 +1,9 @@
-const fs = require('fs');
 const path = require('path');
 const EventEmitter = require('events');
-const { db } = require('./database');
-const { performOCR, classifyTextWithGemini } = require('./pipeline');
-const { getSaoPauloDate, getSaoPauloTime, isTransientError, retryWithBackoff } = require('./utils');
+const Pacote = require('../models/Pacote');
+const AlertaFila = require('../models/AlertaFila');
+const { performOCR, classifyTextWithGemini } = require('./PipelineService');
+const { getSaoPauloDate, getSaoPauloTime, isTransientError, retryWithBackoff } = require('../utils/helpers');
 
 const queueEvents = new EventEmitter();
 
@@ -77,36 +77,40 @@ async function processNext() {
 
     if (hasMissingData) {
       // Inconclusivo: Grava na tabela de alertas de fila para revisão do operador
-      const alertStmt = db.prepare(`
-        INSERT INTO alertas_fila (tipo_erro, codigo_conflito, caminho_imagem_nova, data_criacao, remetente_sugerido, plataforma_sugerida)
-        VALUES ('LEITURA_INCOMPLETA', ?, ?, ?, ?, ?)
-      `);
-      alertStmt.run(metadata.codigo_pacote, currentImagePath, today, metadata.nome_remetente, metadata.plataforma);
+      AlertaFila.create({
+        tipo_erro: 'LEITURA_INCOMPLETA',
+        codigo_conflito: metadata.codigo_pacote,
+        caminho_imagem_nova: currentImagePath,
+        data_criacao: today,
+        remetente_sugerido: metadata.nome_remetente,
+        plataforma_sugerida: metadata.plataforma
+      });
       console.log(`[BANCO/ALERTA] Identificação incompleta detectada para pacote. Alerta 'LEITURA_INCOMPLETA' criado.`);
     } else {
       // Identificado com sucesso: verificar duplicidade na data atual (hoje)
-      const checkStmt = db.prepare(`
-        SELECT id, remetente_bruto, plataforma, caminho_imagem, hora_coleta 
-        FROM pacotes 
-        WHERE codigo_pacote = ? AND data_coleta = ?
-      `);
-      const existing = checkStmt.get(metadata.codigo_pacote, today);
+      const existing = Pacote.findDuplicate(metadata.codigo_pacote, today);
 
       if (existing) {
         // Conflito de Duplicidade: Grava na tabela de alertas de fila
-        const alertStmt = db.prepare(`
-          INSERT INTO alertas_fila (tipo_erro, codigo_conflito, caminho_imagem_nova, data_criacao, remetente_sugerido, plataforma_sugerida)
-          VALUES ('DUPLICIDADE', ?, ?, ?, ?, ?)
-        `);
-        alertStmt.run(metadata.codigo_pacote, currentImagePath, today, metadata.nome_remetente, metadata.plataforma);
+        AlertaFila.create({
+          tipo_erro: 'DUPLICIDADE',
+          codigo_conflito: metadata.codigo_pacote,
+          caminho_imagem_nova: currentImagePath,
+          data_criacao: today,
+          remetente_sugerido: metadata.nome_remetente,
+          plataforma_sugerida: metadata.plataforma
+        });
         console.log(`[BANCO/ALERTA] Duplicidade detectada para código ${metadata.codigo_pacote}. Alerta 'DUPLICIDADE' criado.`);
       } else {
         // Sem conflito: Grava na tabela principal de pacotes
-        const stmt = db.prepare(`
-          INSERT INTO pacotes (codigo_pacote, remetente_bruto, plataforma, caminho_imagem, data_coleta, hora_coleta)
-          VALUES (?, ?, ?, ?, ?, ?)
-        `);
-        stmt.run(metadata.codigo_pacote, metadata.nome_remetente, metadata.plataforma, currentImagePath, today, getSaoPauloTime());
+        Pacote.create({
+          codigo_pacote: metadata.codigo_pacote,
+          remetente_bruto: metadata.nome_remetente,
+          plataforma: metadata.plataforma,
+          caminho_imagem: currentImagePath,
+          data_coleta: today,
+          hora_coleta: getSaoPauloTime()
+        });
         console.log(`[BANCO] Pacote gravado com sucesso: ${metadata.codigo_pacote}`);
       }
     }
@@ -116,19 +120,25 @@ async function processNext() {
     // Se o erro for de conexão/API temporária (exauriu as retentativas do 503), salvamos como erro de serviço externo na DLQ
     try {
       if (isTransientError(error)) {
-        const stmt = db.prepare(`
-          INSERT INTO alertas_fila (tipo_erro, codigo_conflito, caminho_imagem_nova, data_criacao, remetente_sugerido, plataforma_sugerida)
-          VALUES ('ERRO_SERVICO_EXTERNO', ?, ?, ?, 'NÃO IDENTIFICADO', 'NÃO IDENTIFICADO')
-        `);
-        stmt.run(error.message || 'Erro temporário nas APIs externas', currentImagePath, getSaoPauloDate());
+        AlertaFila.create({
+          tipo_erro: 'ERRO_SERVICO_EXTERNO',
+          codigo_conflito: error.message || 'Erro temporário nas APIs externas',
+          caminho_imagem_nova: currentImagePath,
+          data_criacao: getSaoPauloDate(),
+          remetente_sugerido: 'NÃO IDENTIFICADO',
+          plataforma_sugerida: 'NÃO IDENTIFICADO'
+        });
         console.log(`[BANCO/ALERTA] Falha de serviço externo salva na DLQ (ERRO_SERVICO_EXTERNO) para ${filename}.`);
       } else {
         // Falha não temporária (ex: formato incorreto, falha total de processamento local)
-        const stmt = db.prepare(`
-          INSERT INTO alertas_fila (tipo_erro, codigo_conflito, caminho_imagem_nova, data_criacao, remetente_sugerido, plataforma_sugerida)
-          VALUES ('LEITURA_INCOMPLETA', 'ERRO_PIPELINE', ?, ?, ?, ?)
-        `);
-        stmt.run(currentImagePath, getSaoPauloDate(), 'NÃO IDENTIFICADO', 'NÃO IDENTIFICADO');
+        AlertaFila.create({
+          tipo_erro: 'LEITURA_INCOMPLETA',
+          codigo_conflito: 'ERRO_PIPELINE',
+          caminho_imagem_nova: currentImagePath,
+          data_criacao: getSaoPauloDate(),
+          remetente_sugerido: 'NÃO IDENTIFICADO',
+          plataforma_sugerida: 'NÃO IDENTIFICADO'
+        });
         console.log(`[BANCO/ALERTA] Falha crítica não temporária gravada como LEITURA_INCOMPLETA.`);
       }
     } catch (dbErr) {
