@@ -118,16 +118,16 @@ class PacoteController {
   }
 
   /**
-   * Consulta retroativa de pacotes por data.
+   * Consulta retroativa de pacotes por data e filtro opcional de cliente.
    */
   static getHistory(req, res) {
-    const { data } = req.query;
+    const { data, cliente } = req.query;
     if (!data) {
       return res.status(400).json({ success: false, message: 'A data de consulta é obrigatória.' });
     }
 
     try {
-      const packages = Pacote.findAllByDate(data);
+      const packages = Pacote.findAllByDate(data, null, cliente);
 
       packages.forEach(pkg => {
         pkg.caminho_imagem = `/uploads/${path.basename(pkg.caminho_imagem)}`;
