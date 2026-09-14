@@ -5,6 +5,7 @@ const Pacote = require('../models/Pacote');
 const DashboardController = require('./DashboardController');
 const { enqueueImage } = require('../services/QueueService');
 const { getSaoPauloDate, getSaoPauloTime } = require('../utils/helpers');
+const { getUploadsDir } = require('../utils/storage');
 
 class AlertaController {
   /**
@@ -76,6 +77,15 @@ class AlertaController {
             fs.unlinkSync(absolutePath);
           } catch (err) {
             console.error(`Erro ao deletar imagem física do alerta ${imgPath}:`, err.message);
+          }
+        } else {
+          const fallbackPath = path.join(getUploadsDir(), path.basename(imgPath));
+          if (fs.existsSync(fallbackPath)) {
+            try {
+              fs.unlinkSync(fallbackPath);
+            } catch (err) {
+              console.error(`Erro ao deletar imagem física do alerta (fallback) ${fallbackPath}:`, err.message);
+            }
           }
         }
       }

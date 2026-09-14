@@ -26,12 +26,14 @@ A aplicação foi projetada para rodar em hardware de baixo desempenho (ex: note
 *   **Dashboard**: Cards de métricas diárias consolidadas (Shopee/Mercado Livre) no fuso horário de Brasília (UTC-3), barra de progresso em tempo real da fila e tabela com os últimos 50 pacotes lidos.
 *   **Atualização em Tempo Real (Server-Sent Events - SSE)**: Atualização instantânea orientada a eventos. O painel se comunica com o servidor via SSE (`/api/events`), eliminando totalmente o tráfego de requisições de polling (`setInterval`), reduzindo drasticamente o consumo de CPU.
 *   **Tela de Alertas Pendentes**: Centraliza os problemas que precisam de revisão do operador (duplicidades diárias de código e leituras incompletas do OCR).
-*   **Histórico de Coletas**: Busca retroativa de pacotes salvos no banco por data única.
+*   **Histórico de Coletas com Filtro por Cliente**: Busca retroativa de pacotes salvos no banco por data com filtro dinâmico por nome de remetente/cliente em tempo real (com debounce e limpeza rápida).
 *   **Preview de Etiqueta Lado a Lado**: Modais de edição e confronto exibem a imagem física da etiqueta enviada pelo celular ao lado dos campos de texto, garantindo precisão na verificação do operador.
-*   **Exclusão Física**: O descarte ou exclusão de pacotes duplicados apaga tanto o registro no SQLite quanto o arquivo de imagem no disco físico.
+*   **Exclusão Completa (Registro + Foto Física)**: Ação de deletar disponível diretamente na coluna de ações do **Histórico**, na tabela do **Dashboard** e na tela de **Edição Rápida**. Ao excluir um pacote ou descartar um alerta pendente, o sistema remove permanentemente o registro no SQLite e apaga fisicamente o arquivo de imagem do disco (`uploads/`), prevenindo arquivos órfãos.
 
 ### 4. Relatórios Avançados (PDFKit)
-*   **Demonstrativo de Prestação de Contas (Cliente)**: Relatório consolidado em 4 colunas perfeitamente alinhadas (`Data/Hora`, `Remetente Lido`, `Plataforma`, `Código do Pacote`), exibindo os períodos selecionados no padrão `dd-MM-yyyy`.
+*   **Demonstrativo de Prestação de Contas (Cliente)**:
+    *   *Modo Consolidado (por Dia)*: Exibe o total agrupado de pacotes coletados por data e totalizador geral do período, ideal para faturamento rápido.
+    *   *Modo Detalhado*: Relatório item a item em 4 colunas perfeitamente alinhadas (`Data/Hora`, `Remetente Lido`, `Plataforma`, `Código do Pacote`), exibindo os períodos selecionados no padrão `dd-MM-yyyy`.
 *   **Conferência de Balcão (Fechamento)**: Relatório compacto em 3 colunas (`Nome do Remetente/Loja`, `Quantidade`, `Plataforma`) com filtragem por janela horária e sem totalizadores consolidados por turno redundantes.
 *   **Paginação Inteligente**: Alturas de linhas medidas dinamicamente (`heightOfString`). Caso a tabela ultrapasse o fim da página, gera uma quebra automática e **reimprime os cabeçalhos de coluna** no topo da página seguinte para manter o alinhamento.
 

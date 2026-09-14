@@ -85,22 +85,31 @@ class Pacote {
   }
 
   /**
-   * Busca pacotes por data com limite opcional.
+   * Busca pacotes por data com limite e filtro por cliente opcionais.
    * @param {string} date Data da coleta (YYYY-MM-DD).
    * @param {number|null} limit Limite de registros.
+   * @param {string|null} client Filtro por nome do remetente/cliente.
    * @returns {Array} Lista de pacotes.
    */
-  static findAllByDate(date, limit = null) {
+  static findAllByDate(date, limit = null, client = null) {
     let query = `
       SELECT id, codigo_pacote, remetente_bruto, plataforma, hora_coleta, caminho_imagem 
       FROM pacotes 
       WHERE data_coleta = ?
-      ORDER BY hora_coleta DESC, id DESC
     `;
+    const params = [date];
+
+    if (client && typeof client === 'string' && client.trim() !== '') {
+      query += ` AND LOWER(remetente_bruto) LIKE LOWER(?)`;
+      params.push(`%${client.trim()}%`);
+    }
+
+    query += ` ORDER BY hora_coleta DESC, id DESC`;
+
     if (limit !== null) {
       query += ` LIMIT ${Number(limit)}`;
     }
-    return db.prepare(query).all(date);
+    return db.prepare(query).all(...params);
   }
 
   /**
@@ -145,6 +154,27 @@ class Pacote {
       WHERE remetente_bruto IN (${placeholders}) 
         AND data_coleta BETWEEN ? AND ?
       ORDER BY data_coleta ASC, hora_coleta ASC
+    `;
+    return db.prepare(query).all(...clientList, startDate, endDate);
+  }
+
+  /**
+   * Busca dados de pacotes agregados por data para emissão de relatório consolidado por cliente.
+   * @param {Array<string>} clientList Lista de remetentes brutos.
+   * @param {string} startDate Data início (YYYY-MM-DD).
+   * @param {string} endDate Data fim (YYYY-MM-DD).
+   * @returns {Array} Linhas encontradas com data_coleta e total_pacotes.
+   */
+  static findClientReportDataConsolidated(clientList, startDate, endDate) {
+    if (!clientList || clientList.length === 0) return [];
+    const placeholders = clientList.map(() => '?').join(',');
+    const query = `
+      SELECT data_coleta, COUNT(*) AS total_pacotes 
+      FROM pacotes 
+      WHERE remetente_bruto IN (${placeholders}) 
+        AND data_coleta BETWEEN ? AND ?
+      GROUP BY data_coleta
+      ORDER BY data_coleta ASC
     `;
     return db.prepare(query).all(...clientList, startDate, endDate);
   }
