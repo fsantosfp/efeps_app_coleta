@@ -11,6 +11,7 @@ const DashboardController = require('./controllers/DashboardController');
 const PacoteController = require('./controllers/PacoteController');
 const AlertaController = require('./controllers/AlertaController');
 const ReportController = require('./controllers/ReportController');
+const BatchController = require('./controllers/BatchController');
 
 // Rotas de Páginas
 router.get('/admin', PageController.getAdmin);
@@ -38,5 +39,10 @@ router.post('/api/alertas/:id/retry', AlertaController.retry);
 // API Relatórios
 router.get('/api/relatorios/cliente', ReportController.getClientReport);
 router.get('/api/relatorios/conferencia', ReportController.getConferenceReport);
+
+// API Processamento em Lote
+router.post('/api/lote/verificar', BatchController.inspectDirectory);
+router.post('/api/lote/processar', BatchController.processBatch);
+router.get('/api/lote/status', BatchController.getStatus);
 
 module.exports = router;

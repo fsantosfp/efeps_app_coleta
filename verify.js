@@ -220,8 +220,8 @@ async function runTests() {
     console.error('ERRO: Falha ao gerar PDF de conferência.');
   }
 
-  // 9. Simulação de TTL 60 dias
-  console.log('\n[TESTE 9] Injetando pacote antigo para teste do TTL 60 dias...');
+  // 9. Simulação de TTL 15 dias
+  console.log('\n[TESTE 9] Injetando pacote antigo para teste do TTL 15 dias...');
   const db = new Database('coleta.db');
   db.prepare(`
     INSERT INTO pacotes (codigo_pacote, remetente_bruto, plataforma, caminho_imagem, data_coleta)
@@ -237,7 +237,7 @@ async function runTests() {
   // ou podemos testar rodando o código de limpeza do server diretamente:
   console.log('Chamando rotina de limpeza do banco...');
   const limitDate = new Date();
-  limitDate.setDate(limitDate.getDate() - 60);
+  limitDate.setDate(limitDate.getDate() - 15);
   const dateLimitStr = limitDate.toISOString().split('T')[0];
   
   const expiredPkgs = db.prepare('SELECT caminho_imagem FROM pacotes WHERE data_coleta < ?').all(dateLimitStr);

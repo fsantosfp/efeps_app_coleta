@@ -109,6 +109,6 @@ node verify.js
 
 ## 🧹 Política de Retenção de Dados (TTL)
 
-A aplicação conta com uma rotina de inicialização automática de TTL (Time to Live) configurada para **60 dias**. A cada inicialização do servidor:
-*   Registros de pacotes e alertas com mais de 60 dias de criação são excluídos logicamente do banco de dados.
+A aplicação conta com uma rotina de inicialização automática de TTL (Time to Live) configurada para **15 dias** (configurável via variável `TTL_DAYS`). A cada inicialização do servidor:
+*   Registros de pacotes e alertas com mais de 15 dias de criação são excluídos logicamente do banco de dados.
 *   As respectivas imagens das etiquetas armazenadas no disco em `uploads/` são excluídas fisicamente para poupar armazenamento local.

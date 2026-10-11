@@ -148,6 +148,10 @@
         <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
         <span class="font-label-md text-label-md">Dashboard</span>
       </button>
+      <button onclick="switchTab('lote')" id="nav-lote" class="w-full flex items-center gap-space-4 py-space-4 px-space-4 rounded-lg text-on-surface-variant font-medium hover:bg-surface-container hover:text-primary transition-all duration-200 relative">
+        <span class="material-symbols-outlined">folder_open</span>
+        <span class="font-label-md text-label-md">Processar em Lote</span>
+      </button>
       <button onclick="switchTab('alertas')" id="nav-alertas" class="w-full flex items-center gap-space-4 py-space-4 px-space-4 rounded-lg text-on-surface-variant font-medium hover:bg-surface-container hover:text-primary transition-all duration-200 relative">
         <span class="material-symbols-outlined">warning</span>
         <span class="font-label-md text-label-md">Alertas Pendentes</span>
@@ -257,7 +261,12 @@
               <span class="material-symbols-outlined text-primary">pending_actions</span>
               <h4 class="font-headline-sm text-headline-sm text-on-surface">Fila de Processamento</h4>
             </div>
-            <span class="font-label-md text-label-md text-on-surface-variant font-bold" id="queue-status-text">0 de 0 pacotes processados</span>
+            <div class="flex items-center gap-3">
+              <button onclick="switchTab('lote')" class="flex items-center gap-1.5 px-3 py-1 bg-primary/10 border border-primary/30 text-primary rounded-lg text-xs font-semibold hover:bg-primary/20 transition-all">
+                <span class="material-symbols-outlined text-[15px]">folder_open</span> Processar Lote
+              </button>
+              <span class="font-label-md text-label-md text-on-surface-variant font-bold" id="queue-status-text">0 de 0 pacotes processados</span>
+            </div>
           </div>
           <div class="w-full bg-surface-container-highest h-3 rounded-full overflow-hidden">
             <div id="queue-progress-bar" class="h-full bg-primary-container transition-all duration-1000 ease-out" style="width: 0%;"></div>
@@ -469,6 +478,180 @@
             </button>
           </div>
 
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW: PROCESSAMENTO EM LOTE -->
+      <!-- ========================================== -->
+      <section id="view-lote" class="hidden space-y-6">
+        <!-- Card 1: Seleção e Verificação do Diretório -->
+        <div class="bg-surface-container-low border border-outline rounded-xl p-space-6 shadow-xl">
+          <div class="flex items-center justify-between mb-space-4 border-b border-outline-variant pb-space-4">
+            <div class="flex items-center gap-space-3">
+              <span class="material-symbols-outlined text-primary text-[28px]">folder_open</span>
+              <div>
+                <h4 class="font-headline-sm text-headline-sm text-on-surface">Processamento em Lote de Imagens</h4>
+                <p class="text-body-sm text-on-surface-variant">Carregue e processe pacotes diretamente de uma pasta no servidor local, sem necessidade de upload de rede.</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="flex items-center gap-1.5 px-3 py-1 bg-secondary-container/20 text-secondary border border-secondary-container/40 rounded-full text-xs font-bold">
+                <span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span> Servidor Local
+              </span>
+            </div>
+          </div>
+
+          <!-- Formulário de Entrada do Diretório -->
+          <div class="space-y-4">
+            <div>
+              <label for="lote-dir-input" class="block font-label-md text-label-md text-on-surface mb-2">
+                Caminho do Diretório no Servidor (Onde as imagens estão alocadas):
+              </label>
+              <div class="flex flex-col sm:flex-row gap-3">
+                <div class="relative flex-grow">
+                  <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">folder</span>
+                  <input id="lote-dir-input" type="text" placeholder="Ex: /Users/usuario/imagens ou C:\Coletas\Fotos ou resources/uploads" 
+                    class="w-full pl-10 pr-4 py-2.5 bg-surface-container-high border border-outline rounded-lg text-on-surface placeholder:text-on-surface-variant/50 focus:border-primary focus:ring-1 focus:ring-primary text-sm font-mono"/>
+                </div>
+                <button id="btn-inspect-lote" onclick="inspectBatchDirectory()" class="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-on-primary rounded-lg font-bold text-sm hover:opacity-90 transition-all shadow-md active:scale-95 whitespace-nowrap">
+                  <span class="material-symbols-outlined text-[18px]">search</span>
+                  <span id="btn-inspect-lote-text">Examinar Diretório</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Sugestões de Atalho Rápido -->
+            <div class="flex flex-wrap items-center gap-2 text-xs text-on-surface-variant">
+              <span class="font-medium text-on-surface-variant/70">Atalhos rápidos:</span>
+              <button type="button" onclick="setBatchDir('resources/uploads')" class="px-2.5 py-1 bg-surface-container hover:bg-surface-container-high border border-outline-variant rounded text-primary text-xs font-mono transition-colors">
+                resources/uploads
+              </button>
+              <button type="button" onclick="setBatchDir('uploads')" class="px-2.5 py-1 bg-surface-container hover:bg-surface-container-high border border-outline-variant rounded text-primary text-xs font-mono transition-colors">
+                uploads
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Resultado da Inspeção / Confirmação do Lote -->
+        <div id="lote-result-card" class="hidden bg-surface-container-low border border-outline rounded-xl p-space-6 shadow-xl transition-all">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-outline-variant pb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-xl bg-primary-container/20 border border-primary/30 flex items-center justify-center text-primary">
+                <span class="material-symbols-outlined text-[30px]">image</span>
+              </div>
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-primary">Diretório Analisado</span>
+                <p id="lote-dir-display" class="font-mono text-xs text-on-surface-variant break-all mt-0.5">-</p>
+              </div>
+            </div>
+
+            <!-- Contador de Itens em Destaque -->
+            <div class="flex items-center gap-4 bg-surface-container px-4 py-2.5 rounded-xl border border-outline">
+              <div class="text-right">
+                <span class="text-xs text-on-surface-variant block">Total de Itens</span>
+                <span id="lote-items-count" class="font-headline-md text-headline-md font-bold text-primary leading-none">0</span>
+              </div>
+              <span class="material-symbols-outlined text-primary text-[32px]">photo_library</span>
+            </div>
+          </div>
+
+          <!-- Alerta de Proteção de Taxa / Quota (429) -->
+          <div class="mb-6 p-4 rounded-xl bg-primary-container/10 border border-primary/20 flex items-start gap-3">
+            <span class="material-symbols-outlined text-primary mt-0.5 text-[22px]">shield</span>
+            <div class="text-xs text-on-surface leading-relaxed">
+              <strong class="text-primary font-bold">Processamento Seguro em Fila (Controle de Quota):</strong>
+              <p class="text-on-surface-variant mt-1">
+                Todas as imagens do diretório serão processadas sequencialmente através da <strong>fila FIFO única (1 por vez)</strong> com intervalo de segurança entre requisições. 
+                Isso impede sobrecarga na CPU local e protege sua conta contra erros <strong>429 (Too Many Requests)</strong> ou estouro de cota por segundo nas APIs de IA (Google Cloud Vision e Gemini).
+              </p>
+            </div>
+          </div>
+
+          <!-- Amostra dos Arquivos Encontrados -->
+          <div class="mb-6">
+            <h5 class="font-label-md text-label-md text-on-surface mb-2 flex items-center justify-between">
+              <span>Amostra de Imagens Encontradas:</span>
+              <span id="lote-sample-badge" class="text-xs font-normal text-on-surface-variant"></span>
+            </h5>
+            <div id="lote-sample-list" class="flex flex-wrap gap-2 max-h-36 overflow-y-auto p-2 bg-surface-container-lowest border border-outline-variant rounded-lg font-mono text-xs text-on-surface-variant custom-scrollbar">
+              <!-- Injetado dinamicamente -->
+            </div>
+          </div>
+
+          <!-- Botão de Confirmação do Lote -->
+          <div class="flex items-center justify-end gap-3 pt-4 border-t border-outline-variant">
+            <button onclick="resetBatchInspection()" class="px-4 py-2 text-on-surface-variant hover:text-on-surface text-sm transition-colors">
+              Cancelar
+            </button>
+            <button id="btn-confirm-lote" onclick="confirmBatchProcessing()" class="flex items-center gap-2 px-6 py-3 bg-secondary text-on-secondary rounded-lg font-bold text-sm hover:opacity-90 transition-all shadow-lg active:scale-95">
+              <span class="material-symbols-outlined text-[20px]">play_arrow</span>
+              <span id="btn-confirm-lote-text">Confirmar e Iniciar Processamento em Fila</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Card 3: Monitoramento do Processamento do Lote em Tempo Real -->
+        <div id="lote-queue-card" class="bg-surface-container-low border border-outline rounded-xl p-space-6 shadow-xl">
+          <div class="flex items-center justify-between mb-space-4 border-b border-outline-variant pb-space-4">
+            <div class="flex items-center gap-space-3">
+              <span class="material-symbols-outlined text-secondary text-[24px]">sync</span>
+              <h4 class="font-headline-sm text-headline-sm text-on-surface">Monitor de Execução da Fila</h4>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="fetchBatchStatus()" class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-high border border-outline rounded-lg text-body-sm hover:bg-surface-container-highest transition-colors">
+                <span class="material-symbols-outlined text-[16px]">refresh</span> Atualizar Status
+              </button>
+            </div>
+          </div>
+
+          <!-- Banner Informativo da Confirmação -->
+          <div id="lote-confirmation-banner" class="hidden mb-6 p-4 rounded-xl bg-secondary/10 border border-secondary/30 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-secondary text-[26px]">check_circle</span>
+              <div>
+                <p id="lote-confirmation-title" class="font-bold text-secondary text-sm">Lote Confirmado!</p>
+                <p id="lote-confirmation-msg" class="text-xs text-on-surface-variant">Os itens foram organizados na fila e estão sendo processados.</p>
+              </div>
+            </div>
+            <button onclick="switchTab('dashboard')" class="text-xs text-primary hover:underline font-bold px-3 py-1 bg-primary/10 rounded-lg">
+              Ir para o Dashboard →
+            </button>
+          </div>
+
+          <!-- Métricas de Progresso da Fila -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="p-4 bg-surface-container rounded-xl border border-outline">
+              <span class="text-xs text-on-surface-variant block">Total no Dia</span>
+              <span id="lote-stat-total" class="font-headline-sm font-bold text-on-surface">0</span>
+            </div>
+            <div class="p-4 bg-surface-container rounded-xl border border-outline">
+              <span class="text-xs text-on-surface-variant block">Processados</span>
+              <span id="lote-stat-processed" class="font-headline-sm font-bold text-secondary">0</span>
+            </div>
+            <div class="p-4 bg-surface-container rounded-xl border border-outline">
+              <span class="text-xs text-on-surface-variant block">Pendentes na Fila</span>
+              <span id="lote-stat-pending" class="font-headline-sm font-bold text-primary">0</span>
+            </div>
+            <div class="p-4 bg-surface-container rounded-xl border border-outline">
+              <span class="text-xs text-on-surface-variant block">Status do Processador</span>
+              <span id="lote-stat-worker" class="font-headline-sm font-bold text-on-surface-variant text-sm flex items-center gap-1.5 mt-1">
+                <span class="w-2 h-2 rounded-full bg-surface-container-highest"></span> Ocioso
+              </span>
+            </div>
+          </div>
+
+          <!-- Barra de Progresso Geral -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-on-surface-variant">Progresso Geral</span>
+              <span id="lote-progress-percentage" class="text-xs font-bold text-primary">0% Completo</span>
+            </div>
+            <div class="w-full bg-surface-container-highest h-3 rounded-full overflow-hidden">
+              <div id="lote-progress-bar" class="h-full bg-primary-container transition-all duration-700 ease-out" style="width: 0%;"></div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -741,6 +924,7 @@
       document.getElementById('view-historico').classList.add('hidden');
       document.getElementById('view-relatorios').classList.add('hidden');
       document.getElementById('view-alertas').classList.add('hidden');
+      document.getElementById('view-lote').classList.add('hidden');
       
       // Remove estilo ativo da barra lateral
       document.querySelectorAll('#sidebar-nav button').forEach(btn => {
@@ -753,6 +937,11 @@
         document.getElementById('nav-dashboard').className = "w-full flex items-center gap-space-4 py-space-4 px-space-4 rounded-lg text-primary font-bold bg-surface-container border-r-2 border-primary transition-all duration-200 relative";
         document.getElementById('tab-title').textContent = "Dashboard";
         fetchDashboardData();
+      } else if (tab === 'lote') {
+        document.getElementById('view-lote').classList.remove('hidden');
+        document.getElementById('nav-lote').className = "w-full flex items-center gap-space-4 py-space-4 px-space-4 rounded-lg text-primary font-bold bg-surface-container border-r-2 border-primary transition-all duration-200 relative";
+        document.getElementById('tab-title').textContent = "Processamento em Lote";
+        fetchBatchStatus();
       } else if (tab === 'alertas') {
         document.getElementById('view-alertas').classList.remove('hidden');
         document.getElementById('nav-alertas').className = "w-full flex items-center gap-space-4 py-space-4 px-space-4 rounded-lg text-primary font-bold bg-surface-container border-r-2 border-primary transition-all duration-200 relative";
@@ -795,6 +984,9 @@
             fetchDashboardData();
             if (currentTab === 'historico') {
               fetchHistory();
+            }
+            if (currentTab === 'lote') {
+              fetchBatchStatus();
             }
           }
         } catch (err) {
@@ -845,6 +1037,11 @@
         const percentage = total > 0 ? Math.round((processed / total) * 100) : 0;
         document.getElementById('queue-progress-bar').style.width = `${percentage}%`;
         document.getElementById('queue-percentage').innerText = `${percentage}% Completo`;
+
+        // Sincroniza métricas da tela de lote
+        if (typeof updateBatchQueueUI === 'function') {
+          updateBatchQueueUI(data.queue);
+        }
 
         // 3. Sino e Alertas badges
         const alertBadge = document.getElementById('alert-badge');
@@ -1773,6 +1970,192 @@
       } catch (error) {
         console.error('Erro ao excluir alerta:', error);
         alert('Erro de conexão ao tentar descartar o alerta.');
+      }
+    }
+
+    // ==========================================
+    // FUNÇÕES DE PROCESSAMENTO EM LOTE (BATCH)
+    // ==========================================
+    let currentBatchDirectory = '';
+    let currentBatchTotalItems = 0;
+
+    function setBatchDir(path) {
+      document.getElementById('lote-dir-input').value = path;
+    }
+
+    async function inspectBatchDirectory() {
+      const input = document.getElementById('lote-dir-input');
+      const dirPath = input.value.trim();
+      if (!dirPath) {
+        alert('Por favor, informe o caminho do diretório no servidor.');
+        input.focus();
+        return;
+      }
+
+      const btn = document.getElementById('btn-inspect-lote');
+      const btnText = document.getElementById('btn-inspect-lote-text');
+      btn.disabled = true;
+      btnText.innerText = 'Examinando...';
+
+      try {
+        const res = await fetch('/api/lote/verificar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ directoryPath: dirPath })
+        });
+
+        const data = await res.json();
+        if (!data.success) {
+          alert(data.message || 'Erro ao examinar diretório.');
+          return;
+        }
+
+        currentBatchDirectory = data.data.directory;
+        currentBatchTotalItems = data.data.totalItems;
+
+        // Atualiza a tela com o resultado da inspeção
+        document.getElementById('lote-dir-display').innerText = currentBatchDirectory;
+        document.getElementById('lote-items-count').innerText = currentBatchTotalItems;
+
+        const sampleContainer = document.getElementById('lote-sample-list');
+        sampleContainer.innerHTML = '';
+
+        if (data.data.sampleFiles && data.data.sampleFiles.length > 0) {
+          document.getElementById('lote-sample-badge').innerText = `Exibindo ${data.data.sampleFiles.length} de ${currentBatchTotalItems} arquivos`;
+          data.data.sampleFiles.forEach(file => {
+            const item = document.createElement('span');
+            item.className = 'px-2 py-1 bg-surface-container rounded border border-outline-variant';
+            item.innerText = file;
+            sampleContainer.appendChild(item);
+          });
+          if (currentBatchTotalItems > data.data.sampleFiles.length) {
+            const moreItem = document.createElement('span');
+            moreItem.className = 'px-2 py-1 bg-surface-container/50 text-on-surface-variant italic rounded';
+            moreItem.innerText = `+${currentBatchTotalItems - data.data.sampleFiles.length} outros arquivos...`;
+            sampleContainer.appendChild(moreItem);
+          }
+        } else {
+          document.getElementById('lote-sample-badge').innerText = 'Nenhuma imagem encontrada';
+          sampleContainer.innerHTML = '<span class="text-error p-2">Nenhum arquivo de imagem compatível (.jpg, .jpeg, .png, .webp, .bmp) encontrado neste diretório.</span>';
+        }
+
+        const confirmBtn = document.getElementById('btn-confirm-lote');
+        if (currentBatchTotalItems === 0) {
+          confirmBtn.disabled = true;
+          confirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+          confirmBtn.disabled = false;
+          confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        document.getElementById('lote-result-card').classList.remove('hidden');
+        document.getElementById('lote-result-card').scrollIntoView({ behavior: 'smooth' });
+
+      } catch (err) {
+        console.error('Erro na requisição de inspeção do lote:', err);
+        alert('Erro ao comunicar com o servidor.');
+      } finally {
+        btn.disabled = false;
+        btnText.innerText = 'Examinar Diretório';
+      }
+    }
+
+    function resetBatchInspection() {
+      currentBatchDirectory = '';
+      currentBatchTotalItems = 0;
+      document.getElementById('lote-result-card').classList.add('hidden');
+    }
+
+    async function confirmBatchProcessing() {
+      if (!currentBatchDirectory || currentBatchTotalItems <= 0) {
+        alert('Nenhum lote com itens válidos pronto para confirmação.');
+        return;
+      }
+
+      const btn = document.getElementById('btn-confirm-lote');
+      const btnText = document.getElementById('btn-confirm-lote-text');
+      btn.disabled = true;
+      btnText.innerText = 'Enfileirando itens...';
+
+      try {
+        const res = await fetch('/api/lote/processar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ directoryPath: currentBatchDirectory })
+        });
+
+        const data = await res.json();
+        if (!data.success) {
+          alert(data.message || 'Erro ao confirmar lote.');
+          return;
+        }
+
+        // Exibe banner de confirmação com a quantidade de itens confirmada
+        const banner = document.getElementById('lote-confirmation-banner');
+        document.getElementById('lote-confirmation-title').innerText = `Lote Confirmado (${data.data.totalItems} itens)!`;
+        document.getElementById('lote-confirmation-msg').innerText = `${data.data.totalItems} imagens foram enviadas para a fila e serão processadas de forma sequencial com proteção de taxa da IA.`;
+        banner.classList.remove('hidden');
+
+        // Atualiza status da fila na tela de lote
+        if (data.data.queueStatus) {
+          updateBatchQueueUI(data.data.queueStatus);
+        }
+
+        // Oculta o card de inspeção e posiciona no monitor
+        document.getElementById('lote-result-card').classList.add('hidden');
+        document.getElementById('lote-queue-card').scrollIntoView({ behavior: 'smooth' });
+
+      } catch (err) {
+        console.error('Erro ao confirmar processamento do lote:', err);
+        alert('Erro de conexão ao enviar o lote para processamento.');
+      } finally {
+        btn.disabled = false;
+        btnText.innerText = 'Confirmar e Iniciar Processamento em Fila';
+      }
+    }
+
+    function updateBatchQueueUI(queue) {
+      if (!queue) return;
+      const total = queue.totalToday || 0;
+      const processed = queue.processedToday || 0;
+      const pending = queue.pending || 0;
+      const processing = queue.processing || 0;
+
+      const totalEl = document.getElementById('lote-stat-total');
+      const processedEl = document.getElementById('lote-stat-processed');
+      const pendingEl = document.getElementById('lote-stat-pending');
+      const workerEl = document.getElementById('lote-stat-worker');
+      const barEl = document.getElementById('lote-progress-bar');
+      const percentEl = document.getElementById('lote-progress-percentage');
+
+      if (totalEl) totalEl.innerText = total;
+      if (processedEl) processedEl.innerText = processed;
+      if (pendingEl) pendingEl.innerText = pending;
+
+      if (workerEl) {
+        if (processing > 0) {
+          workerEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span> Ativo (1 por vez)';
+          workerEl.className = 'font-headline-sm font-bold text-secondary text-sm flex items-center gap-1.5 mt-1';
+        } else {
+          workerEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-surface-container-highest"></span> Ocioso';
+          workerEl.className = 'font-headline-sm font-bold text-on-surface-variant text-sm flex items-center gap-1.5 mt-1';
+        }
+      }
+
+      const percentage = total > 0 ? Math.round((processed / total) * 100) : 0;
+      if (barEl) barEl.style.width = `${percentage}%`;
+      if (percentEl) percentEl.innerText = `${percentage}% Completo`;
+    }
+
+    async function fetchBatchStatus() {
+      try {
+        const res = await fetch('/api/lote/status');
+        const json = await res.json();
+        if (json.success && json.data) {
+          updateBatchQueueUI(json.data);
+        }
+      } catch (err) {
+        console.error('Erro ao buscar status do lote:', err);
       }
     }
 
