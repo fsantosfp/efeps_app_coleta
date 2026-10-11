@@ -45,6 +45,6 @@ router.post('/api/lote/verificar', BatchController.inspectDirectory);
 router.post('/api/lote/processar', BatchController.processBatch);
 router.get('/api/lote/status', BatchController.getStatus);
 router.get('/api/lote/pastas', BatchController.listDirectories);
-router.post('/api/lote/abrir-dialogo-nativo', BatchController.openNativeDialog);
+router.post('/api/lote/upload', upload.array('imagens', 2000), BatchController.uploadBatchFiles);
 
 module.exports = router;
