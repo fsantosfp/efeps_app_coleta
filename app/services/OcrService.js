@@ -5,26 +5,27 @@ require('dotenv').config();
 
 // Inicialização do Cliente Vision
 let visionClient = null;
+let savedApiKey = null;
 
-if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+const creds = process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.GOOGLE_API_KEY || process.env.VISION_API_KEY;
+
+if (creds) {
   try {
-    if (fs.existsSync(process.env.GOOGLE_APPLICATION_CREDENTIALS)) {
+    if (fs.existsSync(creds)) {
       visionClient = new vision.ImageAnnotatorClient();
       console.log('Google Vision API inicializada com sucesso usando arquivo de credenciais.');
-    } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS.startsWith('AIzaSy')) {
-      const apiKey = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-      // Remove do environment para evitar que a biblioteca tente ler o valor da chave como um caminho de arquivo
-      delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
-      visionClient = new vision.ImageAnnotatorClient({ apiKey: apiKey });
-      console.log('Google Vision API inicializada com sucesso usando API Key.');
     } else {
-      console.warn('AVISO: GOOGLE_APPLICATION_CREDENTIALS não encontrado no disco e não parece ser uma API Key válida. Usando modo simulado para OCR.');
+      // É uma API Key (ex: AIzaSy...)
+      savedApiKey = creds;
+      delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
+      visionClient = new vision.ImageAnnotatorClient({ apiKey: savedApiKey });
+      console.log('Google Vision API inicializada com sucesso usando API Key.');
     }
   } catch (error) {
     console.error('Erro ao inicializar Google Vision Client:', error.message);
   }
 } else {
-  console.warn('AVISO: GOOGLE_APPLICATION_CREDENTIALS não configurado. Usando modo simulado para OCR.');
+  console.warn('AVISO: GOOGLE_APPLICATION_CREDENTIALS ou GOOGLE_API_KEY não configurado. Usando modo simulado para OCR.');
 }
 
 /**
@@ -86,6 +87,11 @@ async function extractText(imagePath) {
       return "Mercado Livre FLEX\nRemetente: Loja Parceira #998372\nCódigo de barras: ML-482-9382";
     }
     return "Texto ilegível da etiqueta borrada.";
+  }
+
+  // Previne que a biblioteca @google-cloud/vision tente ler a API Key como caminho de arquivo se dotenv tiver recarregado a variável
+  if (savedApiKey || (process.env.GOOGLE_APPLICATION_CREDENTIALS && !fs.existsSync(process.env.GOOGLE_APPLICATION_CREDENTIALS))) {
+    delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
   }
 
   try {

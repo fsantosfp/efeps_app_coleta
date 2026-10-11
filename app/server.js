@@ -6,6 +6,17 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
+// Sanitização de credenciais: se GOOGLE_APPLICATION_CREDENTIALS for uma API Key e não um arquivo no disco
+if (process.env.GOOGLE_APPLICATION_CREDENTIALS && !fs.existsSync(process.env.GOOGLE_APPLICATION_CREDENTIALS)) {
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS.startsWith('AIzaSy')) {
+    process.env.GOOGLE_API_KEY = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    if (!process.env.GEMINI_API_KEY) {
+      process.env.GEMINI_API_KEY = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    }
+  }
+  delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
+}
+
 const { initDb } = require('./database');
 const { queueEvents } = require('./services/QueueService');
 const DashboardController = require('./controllers/DashboardController');
@@ -21,6 +32,17 @@ const PORT = process.env.PORT || 3000;
 // Inicialização do Banco de Dados
 initDb();
 
+// Habilita CORS para requisições de dispositivos móveis na rede local
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 // Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -32,6 +54,18 @@ app.use('/uploads', express.static(getUploadsDir()));
 
 // Carrega as rotas da aplicação
 app.use(routes);
+
+// Middleware de tratamento de erros HTTP / Multer
+app.use((err, req, res, next) => {
+  console.error('[ERRO HTTP]', err.message || err);
+  if (res.headersSent) {
+    return next(err);
+  }
+  return res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Erro interno no servidor.'
+  });
+});
 
 // Escuta eventos da fila e notifica clientes via SSE em tempo real
 queueEvents.on('process-complete', () => {

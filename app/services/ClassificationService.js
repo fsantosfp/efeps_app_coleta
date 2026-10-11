@@ -4,10 +4,11 @@ require('dotenv').config();
 
 // Inicialização do Cliente Gemini
 let genAI = null;
+const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
-if (process.env.GEMINI_API_KEY) {
+if (geminiApiKey) {
   try {
-    genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    genAI = new GoogleGenerativeAI(geminiApiKey);
     console.log('Google Gemini API inicializada com sucesso.');
   } catch (error) {
     console.error('Erro ao inicializar Gemini Client:', error.message);

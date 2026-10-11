@@ -23,11 +23,18 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => {
     // Nome único com timestamp e número aleatório
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, 'etiqueta-' + uniqueSuffix + path.extname(file.originalname));
+    const rawExt = path.extname(file.originalname || '').toLowerCase();
+    const ext = (rawExt && rawExt.length <= 5) ? rawExt : '.jpg';
+    cb(null, 'etiqueta-' + uniqueSuffix + ext);
   }
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024 // Limite seguro de 50MB
+  }
+});
 
 module.exports = {
   upload,
