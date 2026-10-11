@@ -218,6 +218,37 @@
       }
     }
 
+    // Exibe o modal de sucesso após upload
+    function showSuccessModal() {
+      const overlay = document.getElementById('success-overlay');
+      if (overlay) {
+        overlay.classList.remove('translate-y-full');
+      }
+      triggerHaptic([30, 50, 30]);
+    }
+
+    // Reseta o estado do botão de captura e fecha o overlay de sucesso
+    function resetFlow() {
+      const buttonContent = document.getElementById('capture-button-content');
+      const spinner = document.getElementById('upload-spinner');
+      const label = document.getElementById('capture-label');
+      const overlay = document.getElementById('success-overlay');
+
+      if (buttonContent) buttonContent.classList.remove('hidden');
+      if (spinner) spinner.classList.add('hidden');
+      if (label) label.classList.remove('pointer-events-none');
+      if (overlay) overlay.classList.add('translate-y-full');
+    }
+
+    // Fecha o modal de sucesso e reabre imediatamente a câmera para o próximo pacote
+    function reopenCamera() {
+      resetFlow();
+      const input = document.getElementById('capture-input');
+      if (input) {
+        input.click();
+      }
+    }
+
     // Otimiza e comprime a foto capturada pelo celular no próprio navegador antes do envio
     function compressImage(file, maxWidth = 1600, maxHeight = 1600, quality = 0.82) {
       return new Promise((resolve) => {
