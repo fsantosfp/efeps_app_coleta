@@ -502,34 +502,37 @@
             </div>
           </div>
 
-          <!-- Formulário de Entrada do Diretório -->
+          <!-- Formulário de Seleção do Diretório -->
           <div class="space-y-4">
             <div>
               <label for="lote-dir-input" class="block font-label-md text-label-md text-on-surface mb-2">
-                Caminho do Diretório no Servidor (Onde as imagens estão alocadas):
+                Pasta das Imagens no Computador:
               </label>
+              
               <div class="flex flex-col sm:flex-row gap-3">
                 <div class="relative flex-grow">
                   <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">folder</span>
-                  <input id="lote-dir-input" type="text" placeholder="Ex: /Users/usuario/imagens ou C:\Coletas\Fotos ou resources/uploads" 
-                    class="w-full pl-10 pr-4 py-2.5 bg-surface-container-high border border-outline rounded-lg text-on-surface placeholder:text-on-surface-variant/50 focus:border-primary focus:ring-1 focus:ring-primary text-sm font-mono"/>
+                  <input id="lote-dir-input" type="text" placeholder="Clique em 'Localizar' para selecionar a pasta das imagens..." 
+                    class="w-full pl-10 pr-10 py-2.5 bg-surface-container-high border border-outline rounded-lg text-on-surface placeholder:text-on-surface-variant/50 focus:border-primary focus:ring-1 focus:ring-primary text-sm font-mono"/>
+                  <button type="button" onclick="clearBatchDir()" class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface p-1 rounded" title="Limpar campo">
+                    <span class="material-symbols-outlined text-[18px]">clear</span>
+                  </button>
                 </div>
-                <button id="btn-inspect-lote" onclick="inspectBatchDirectory()" class="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-on-primary rounded-lg font-bold text-sm hover:opacity-90 transition-all shadow-md active:scale-95 whitespace-nowrap">
-                  <span class="material-symbols-outlined text-[18px]">search</span>
-                  <span id="btn-inspect-lote-text">Examinar Diretório</span>
-                </button>
-              </div>
-            </div>
 
-            <!-- Sugestões de Atalho Rápido -->
-            <div class="flex flex-wrap items-center gap-2 text-xs text-on-surface-variant">
-              <span class="font-medium text-on-surface-variant/70">Atalhos rápidos:</span>
-              <button type="button" onclick="setBatchDir('resources/uploads')" class="px-2.5 py-1 bg-surface-container hover:bg-surface-container-high border border-outline-variant rounded text-primary text-xs font-mono transition-colors">
-                resources/uploads
-              </button>
-              <button type="button" onclick="setBatchDir('uploads')" class="px-2.5 py-1 bg-surface-container hover:bg-surface-container-high border border-outline-variant rounded text-primary text-xs font-mono transition-colors">
-                uploads
-              </button>
+                <div class="flex items-center gap-2">
+                  <!-- Botão Localizar -->
+                  <button type="button" onclick="openFolderBrowserModal()" class="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-on-primary rounded-lg font-bold text-sm hover:opacity-90 transition-all shadow-md active:scale-95 whitespace-nowrap">
+                    <span class="material-symbols-outlined text-[20px]">folder_open</span>
+                    <span>Localizar</span>
+                  </button>
+
+                  <!-- Botão de Analisar / Reexaminar -->
+                  <button id="btn-inspect-lote" type="button" onclick="inspectBatchDirectory()" class="flex items-center justify-center gap-2 px-4 py-2.5 bg-secondary-container/20 text-secondary border border-secondary-container/40 rounded-lg font-bold text-sm hover:bg-secondary-container/30 transition-all active:scale-95 whitespace-nowrap" title="Recarregar e analisar imagens da pasta">
+                    <span class="material-symbols-outlined text-[18px]">sync</span>
+                    <span id="btn-inspect-lote-text">Analisar</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -894,6 +897,93 @@
       <span class="material-symbols-outlined">close</span>
     </button>
     <img id="full-size-image" class="max-w-full max-h-full object-contain rounded-lg border border-white/10" src=""/>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: NAVEGADOR DE PASTAS (EXPLORER LOCAL) -->
+  <!-- ========================================== -->
+  <div id="modal-folder-browser" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-surface-container-lowest/80 backdrop-blur-sm">
+    <div class="bg-surface-container-low border border-outline w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[85vh]">
+      <!-- Header -->
+      <div class="px-6 py-4 border-b border-outline bg-surface-container flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-primary-container/20 border border-primary/30 flex items-center justify-center text-primary">
+            <span class="material-symbols-outlined text-[24px]">folder_open</span>
+          </div>
+          <div>
+            <h3 class="font-headline-sm text-lg font-bold text-on-surface">Explorador de Arquivos & Pastas</h3>
+            <p class="text-xs text-on-surface-variant">Navegue pelas pastas do computador e selecione onde estão as imagens das etiquetas.</p>
+          </div>
+        </div>
+        <button onclick="closeFolderBrowserModal()" class="text-on-surface-variant hover:text-on-surface p-1.5 rounded-lg hover:bg-surface-container-high transition-colors">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+
+      <!-- Barra de Ferramentas / Breadcrumbs e Navegação -->
+      <div class="p-3 md:p-4 bg-surface-container-lowest border-b border-outline flex items-center gap-2">
+        <button id="fb-btn-up" onclick="fbNavigateUp()" class="p-2 bg-surface-container hover:bg-surface-container-high text-on-surface rounded-lg border border-outline flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed" title="Subir um nível (pasta acima)">
+          <span class="material-symbols-outlined text-[18px]">arrow_upward</span>
+        </button>
+        <button onclick="fbRefresh()" class="p-2 bg-surface-container hover:bg-surface-container-high text-on-surface rounded-lg border border-outline flex items-center justify-center transition-colors" title="Atualizar pasta">
+          <span class="material-symbols-outlined text-[18px]">refresh</span>
+        </button>
+        <div class="flex-grow flex items-center gap-2 px-3 py-1.5 bg-surface-container-high border border-outline rounded-lg overflow-x-auto text-xs font-mono text-on-surface custom-scrollbar">
+          <span class="material-symbols-outlined text-primary text-[16px] shrink-0">folder</span>
+          <span id="fb-current-path" class="truncate select-all">Carregando...</span>
+        </div>
+      </div>
+
+      <!-- Corpo Principal: Atalhos na Esquerda + Lista de Subpastas na Direita -->
+      <div class="flex-grow grid grid-cols-1 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-outline overflow-hidden min-h-[340px]">
+        <!-- Coluna Esquerda: Atalhos e Unidades -->
+        <div class="p-3 bg-surface-container space-y-1 overflow-y-auto max-h-[30vh] md:max-h-[50vh] custom-scrollbar">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant/70 px-2.5 py-1 block">Locais & Unidades</span>
+          <div id="fb-shortcuts-list" class="space-y-1">
+            <!-- Injetado dinamicamente via API -->
+          </div>
+        </div>
+
+        <!-- Coluna Direita: Conteúdo da Pasta Atual (Subpastas) -->
+        <div class="md:col-span-3 p-4 bg-surface-container-low flex flex-col justify-between overflow-hidden">
+          <div class="overflow-y-auto max-h-[42vh] custom-scrollbar pr-1 flex-grow">
+            <!-- Grid de Pastas -->
+            <div id="fb-folder-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              <!-- Injetado dinamicamente -->
+            </div>
+            <div id="fb-empty-state" class="hidden py-12 text-center text-on-surface-variant text-sm">
+              <span class="material-symbols-outlined text-4xl mb-2 opacity-40">folder_off</span>
+              <p>Nenhuma subpasta encontrada neste local.</p>
+            </div>
+          </div>
+
+          <!-- Indicador de Imagens no diretório atual -->
+          <div class="mt-4 pt-3 border-t border-outline flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary text-[18px]">photo_library</span>
+              <span id="fb-image-count-text" class="text-on-surface font-medium">0 imagens encontradas nesta pasta</span>
+            </div>
+            <span class="text-on-surface-variant hidden sm:inline">Dê 2 cliques para abrir uma pasta</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rodapé do Modal -->
+      <div class="px-6 py-4 border-t border-outline bg-surface-container flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div class="text-xs text-on-surface-variant truncate w-full sm:w-auto">
+          Pasta selecionada: <strong id="fb-selected-display" class="text-primary font-mono select-all">Nenhuma</strong>
+        </div>
+        <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+          <button onclick="closeFolderBrowserModal()" class="px-4 py-2 text-on-surface-variant hover:text-on-surface text-sm transition-colors">
+            Cancelar
+          </button>
+          <button id="fb-btn-confirm" onclick="fbConfirmSelectCurrentFolder()" class="flex items-center gap-2 px-5 py-2.5 bg-secondary text-on-secondary rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-md">
+            <span class="material-symbols-outlined text-[18px]">check</span>
+            <span>Selecionar Esta Pasta</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ========================================== -->
@@ -1979,15 +2069,185 @@
     let currentBatchDirectory = '';
     let currentBatchTotalItems = 0;
 
+    let fbCurrentDir = '';
+    let fbParentDir = null;
+    let fbSelectedDir = '';
+
     function setBatchDir(path) {
       document.getElementById('lote-dir-input').value = path;
+    }
+
+    function clearBatchDir() {
+      document.getElementById('lote-dir-input').value = '';
+      resetBatchInspection();
+    }
+
+    function setAndInspectBatchDir(path) {
+      setBatchDir(path);
+      inspectBatchDirectory();
+    }
+
+    // Modal de Navegação de Pastas (Estilo Explorer)
+    function openFolderBrowserModal() {
+      const modal = document.getElementById('modal-folder-browser');
+      modal.classList.remove('hidden');
+      const existingPath = document.getElementById('lote-dir-input').value.trim();
+      fbLoadDirectory(existingPath || '');
+    }
+
+    function closeFolderBrowserModal() {
+      document.getElementById('modal-folder-browser').classList.add('hidden');
+    }
+
+    async function fbLoadDirectory(dirPath) {
+      try {
+        const url = dirPath ? `/api/lote/pastas?dir=${encodeURIComponent(dirPath)}` : '/api/lote/pastas';
+        const res = await fetch(url);
+        const json = await res.json();
+        if (!json.success) {
+          alert(json.message || 'Erro ao carregar diretório.');
+          return;
+        }
+
+        const { currentDir, parentDir, subdirectories, imageCountInCurrentDir, shortcuts } = json.data;
+        fbCurrentDir = currentDir;
+        fbParentDir = parentDir;
+        fbSelectedDir = currentDir;
+
+        document.getElementById('fb-current-path').innerText = currentDir;
+        document.getElementById('fb-selected-display').innerText = currentDir;
+        document.getElementById('fb-image-count-text').innerText = `${imageCountInCurrentDir} imagem(ns) compatível(is) nesta pasta`;
+
+        const upBtn = document.getElementById('fb-btn-up');
+        if (parentDir) {
+          upBtn.disabled = false;
+        } else {
+          upBtn.disabled = true;
+        }
+
+        // Renderizar Atalhos
+        const shortcutsContainer = document.getElementById('fb-shortcuts-list');
+        shortcutsContainer.innerHTML = '';
+        (shortcuts || []).forEach(sc => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          const isCurrent = sc.path.toLowerCase() === currentDir.toLowerCase();
+          btn.className = `w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors text-left ${
+            isCurrent ? 'bg-primary/20 text-primary font-bold' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+          }`;
+          btn.innerHTML = `<span class="material-symbols-outlined text-[16px]">${sc.icon || 'folder'}</span><span class="truncate">${sc.label}</span>`;
+          btn.onclick = () => fbLoadDirectory(sc.path);
+          shortcutsContainer.appendChild(btn);
+        });
+
+        // Renderizar Pastas
+        const grid = document.getElementById('fb-folder-grid');
+        const emptyState = document.getElementById('fb-empty-state');
+        grid.innerHTML = '';
+
+        if (!subdirectories || subdirectories.length === 0) {
+          emptyState.classList.remove('hidden');
+        } else {
+          emptyState.classList.add('hidden');
+          subdirectories.forEach(sub => {
+            const item = document.createElement('div');
+            item.className = 'group p-3 bg-surface-container hover:bg-surface-container-high border border-outline hover:border-primary/50 rounded-xl cursor-pointer transition-all flex items-center gap-3 select-none';
+            item.title = `Clique duas vezes para abrir "${sub.name}"`;
+            
+            const badge = sub.imageCount > 0 
+              ? `<span class="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-bold ml-auto">${sub.imageCount} img</span>`
+              : '';
+
+            item.innerHTML = `
+              <span class="material-symbols-outlined text-primary text-[24px] group-hover:scale-110 transition-transform">folder</span>
+              <div class="overflow-hidden flex-grow">
+                <p class="text-xs font-medium text-on-surface truncate">${sub.name}</p>
+              </div>
+              ${badge}
+            `;
+
+            // Clique simples seleciona
+            item.onclick = (e) => {
+              document.querySelectorAll('#fb-folder-grid > div').forEach(el => el.classList.remove('ring-2', 'ring-primary'));
+              item.classList.add('ring-2', 'ring-primary');
+              fbSelectedDir = sub.path;
+              document.getElementById('fb-selected-display').innerText = sub.path;
+            };
+
+            // Clique duplo entra na subpasta
+            item.ondblclick = () => {
+              fbLoadDirectory(sub.path);
+            };
+
+            grid.appendChild(item);
+          });
+        }
+
+      } catch (err) {
+        console.error('Erro ao listar pastas:', err);
+        alert('Erro de comunicação ao navegar pelas pastas.');
+      }
+    }
+
+    function fbNavigateUp() {
+      if (fbParentDir) {
+        fbLoadDirectory(fbParentDir);
+      }
+    }
+
+    function fbRefresh() {
+      fbLoadDirectory(fbCurrentDir);
+    }
+
+    function fbConfirmSelectCurrentFolder() {
+      const chosenPath = fbSelectedDir || fbCurrentDir;
+      if (!chosenPath) {
+        alert('Nenhuma pasta selecionada.');
+        return;
+      }
+      document.getElementById('lote-dir-input').value = chosenPath;
+      closeFolderBrowserModal();
+      // Automaticamente examina o diretório selecionado
+      inspectBatchDirectory();
+    }
+
+    // Abrir diálogo nativo do sistema operacional (Windows Explorer / Finder)
+    async function openNativeFolderPicker() {
+      const btn = document.getElementById('btn-native-picker');
+      let originalHtml = '';
+      if (btn) {
+        originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = `<span class="material-symbols-outlined text-[18px] animate-spin">sync</span><span>Aguardando...</span>`;
+      }
+
+      try {
+        const res = await fetch('/api/lote/abrir-dialogo-nativo', { method: 'POST' });
+        const json = await res.json();
+        if (json.success && json.selectedPath) {
+          document.getElementById('lote-dir-input').value = json.selectedPath;
+          inspectBatchDirectory();
+        } else if (json.cancelled) {
+          console.log('Seleção cancelada pelo operador.');
+        } else if (json.error) {
+          alert(`Aviso: ${json.error}\n\nUse o botão "Navegar no Explorer" para selecionar a pasta interativamente.`);
+        }
+      } catch (err) {
+        console.error('Erro ao abrir diálogo nativo:', err);
+        alert('Não foi possível abrir o diálogo nativo do sistema. Use o botão "Navegar no Explorer" para navegar visualmente.');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalHtml;
+        }
+      }
     }
 
     async function inspectBatchDirectory() {
       const input = document.getElementById('lote-dir-input');
       const dirPath = input.value.trim();
       if (!dirPath) {
-        alert('Por favor, informe o caminho do diretório no servidor.');
+        alert('Por favor, selecione ou informe o caminho do diretório no servidor.');
         input.focus();
         return;
       }
@@ -2056,7 +2316,7 @@
         alert('Erro ao comunicar com o servidor.');
       } finally {
         btn.disabled = false;
-        btnText.innerText = 'Examinar Diretório';
+        btnText.innerText = 'Analisar';
       }
     }
 
