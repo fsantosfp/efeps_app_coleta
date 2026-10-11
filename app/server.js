@@ -39,13 +39,14 @@ queueEvents.on('process-complete', () => {
 });
 
 // =========================================================================
-// ROTINA TTL: Exclui registros e imagens físicas com mais de 60 dias
+// ROTINA TTL: Exclui registros e imagens físicas com mais de 15 dias
 // =========================================================================
 function runTtlCleanup() {
-  console.log('[TTL] Iniciando verificação de arquivos expirados (TTL 60 dias)...');
+  const ttlDays = parseInt(process.env.TTL_DAYS || '15', 10);
+  console.log(`[TTL] Iniciando verificação de arquivos expirados (TTL ${ttlDays} dias)...`);
   try {
-    const sixtyDaysAgo = new Date(new Date().getTime() - 60 * 24 * 60 * 60 * 1000);
-    const dateLimit = getSaoPauloDate(sixtyDaysAgo);
+    const cutoffDate = new Date(new Date().getTime() - ttlDays * 24 * 60 * 60 * 1000);
+    const dateLimit = getSaoPauloDate(cutoffDate);
 
     // 1. Limpeza de Pacotes
     const pacotesExpirados = Pacote.findOlderThan(dateLimit);
