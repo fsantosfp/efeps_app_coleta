@@ -6,6 +6,17 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
+// Sanitização de credenciais: se GOOGLE_APPLICATION_CREDENTIALS for uma API Key e não um arquivo no disco
+if (process.env.GOOGLE_APPLICATION_CREDENTIALS && !fs.existsSync(process.env.GOOGLE_APPLICATION_CREDENTIALS)) {
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS.startsWith('AIzaSy')) {
+    process.env.GOOGLE_API_KEY = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    if (!process.env.GEMINI_API_KEY) {
+      process.env.GEMINI_API_KEY = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    }
+  }
+  delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
+}
+
 const { initDb } = require('./database');
 const { queueEvents } = require('./services/QueueService');
 const DashboardController = require('./controllers/DashboardController');
