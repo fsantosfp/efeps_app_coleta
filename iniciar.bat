@@ -17,7 +17,7 @@ if not exist "node_modules\" (
 
 echo.
 echo [*] Inicializando o Servidor Local...
-start "" /B node server.js
+start "" /B node app/server.js
 
 echo [*] Aguardando o servidor ligar na porta 3000...
 timeout /t 3 /nobreak > nul

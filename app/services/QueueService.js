@@ -12,9 +12,43 @@ const fileQueue = [];
 let activeWorkers = 0;
 const MAX_CONCURRENT_WORKERS = 1; // Limite rigoroso de 1 por vez para economizar CPU/RAM no i5
 
+// Intervalo de segurança (ms) entre chamadas para evitar estouro de requisições por segundo (429) na API de IA
+const QUEUE_DELAY_MS = parseInt(process.env.QUEUE_DELAY_MS || '1500', 10);
+
 // Estatísticas para a Dashboard
 let totalEnqueuedToday = 0;
 let totalProcessedToday = 0;
+
+/**
+ * Adiciona um lote de arquivos à fila de processamento.
+ * @param {Array<string|Object>} items Lista de caminhos de arquivos ou objetos { imagePath, originalDate, originalTime }.
+ * @returns {number} Quantidade de itens enfileirados.
+ */
+function enqueueBatch(items) {
+  if (!Array.isArray(items) || items.length === 0) return 0;
+
+  items.forEach(entry => {
+    if (typeof entry === 'string') {
+      fileQueue.push({ imagePath: entry, originalDate: null, originalTime: null });
+    } else if (entry && entry.imagePath) {
+      fileQueue.push({
+        imagePath: entry.imagePath,
+        originalDate: entry.originalDate || null,
+        originalTime: entry.originalTime || null
+      });
+    }
+  });
+
+  totalEnqueuedToday += items.length;
+  console.log(`[FILA/LOTE] Lote de ${items.length} itens adicionado. Total pendente na fila: ${fileQueue.length}.`);
+
+  // Dispara o processamento se houver capacidade
+  if (activeWorkers < MAX_CONCURRENT_WORKERS) {
+    processNext();
+  }
+
+  return items.length;
+}
 
 /**
  * Adiciona um arquivo de imagem à fila de processamento.
@@ -51,6 +85,11 @@ function getQueueStatus() {
 async function processNext() {
   if (fileQueue.length === 0) {
     activeWorkers = 0;
+    return;
+  }
+
+  // Garante limite estrito de concorrência para poupar recursos e respeitar taxas da API
+  if (activeWorkers >= MAX_CONCURRENT_WORKERS) {
     return;
   }
 
@@ -154,10 +193,19 @@ async function processNext() {
     }
   } finally {
     totalProcessedToday++;
-    activeWorkers--;
     queueEvents.emit('process-complete');
-    // Próximo da fila
-    processNext();
+
+    // Se ainda houver itens na fila, aguarda o intervalo de segurança (QUEUE_DELAY_MS)
+    // para evitar estourar limites de requisição por segundo ou cota (429) na API de IA
+    if (fileQueue.length > 0) {
+      setTimeout(() => {
+        activeWorkers--;
+        processNext();
+      }, QUEUE_DELAY_MS);
+    } else {
+      activeWorkers--;
+      processNext();
+    }
   }
 }
 
@@ -171,6 +219,7 @@ function resetQueueCounters() {
 
 module.exports = {
   enqueueImage,
+  enqueueBatch,
   getQueueStatus,
   resetQueueCounters,
   queueEvents
