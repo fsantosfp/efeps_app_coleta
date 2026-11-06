@@ -1,0 +1,11 @@
+node_modules/
+.env
+uploads/
+*.db
+*.db-journal
+.DS_Store
+docs/*
+*.log
+*.db-shm
+*.db-wal
+.agent/
