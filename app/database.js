@@ -84,6 +84,17 @@ const initDb = () => {
   } catch (e) {
     // A coluna já existe
   }
+  // Reprocessamento: vínculo do alerta com o pacote existente e motivo da falha
+  try {
+    db.exec("ALTER TABLE alertas_fila ADD COLUMN pacote_id INTEGER;");
+  } catch (e) {
+    // A coluna já existe
+  }
+  try {
+    db.exec("ALTER TABLE alertas_fila ADD COLUMN detalhe TEXT;");
+  } catch (e) {
+    // A coluna já existe
+  }
 
   console.log(`Banco de dados inicializado em: ${absoluteDbPath}`);
 };

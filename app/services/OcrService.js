@@ -1,6 +1,7 @@
 const vision = require('@google-cloud/vision');
 const fs = require('fs');
 const path = require('path');
+const { markAsExternalServiceError } = require('../utils/helpers');
 require('dotenv').config();
 
 // Inicialização do Cliente Vision
@@ -105,7 +106,11 @@ async function extractText(imagePath) {
     return '';
   } catch (error) {
     console.error(`Erro ao executar Vision OCR no arquivo ${imagePath}:`, error.message);
-    throw error;
+    // Erros de leitura local do arquivo não são falhas do serviço externo
+    if (error && error.code === 'ENOENT') {
+      throw error;
+    }
+    throw markAsExternalServiceError(error, 'Vision');
   }
 }
 

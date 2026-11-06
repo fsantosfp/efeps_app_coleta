@@ -4,6 +4,13 @@ const Pacote = require('../models/Pacote');
 const DashboardController = require('./DashboardController');
 const { getSaoPauloDate } = require('../utils/helpers');
 const { getUploadsDir } = require('../utils/storage');
+const { enqueueReprocess } = require('../services/QueueService');
+const ReprocessService = require('../services/ReprocessService');
+const { logReprocess } = require('../utils/auditLog');
+
+// Texto que o operador precisa digitar para aprovar o reprocessamento
+const CONFIRMACAO_REPROCESSAMENTO = 'REPROCESSAR';
+const MAX_REPROCESS_ITEMS = 2000;
 
 class PacoteController {
   /**
@@ -137,6 +144,64 @@ class PacoteController {
     } catch (error) {
       console.error(`Erro ao consultar histórico para data ${data}:`, error.message);
       res.status(500).json({ success: false, message: 'Erro interno ao consultar histórico.' });
+    }
+  }
+
+  /**
+   * Reprocessa (OCR + classificação novamente) um ou mais pacotes já cadastrados.
+   * Exige confirmação explícita digitada pelo operador (palavra REPROCESSAR).
+   * O processamento é assíncrono, na mesma fila FIFO dos novos pacotes.
+   * Cada alteração é registrada no log de auditoria (reprocessamento.log) com o dado anterior e o novo.
+   */
+  static reprocess(req, res) {
+    const { ids, confirmacao } = req.body || {};
+
+    if (typeof confirmacao !== 'string' || confirmacao.trim() !== CONFIRMACAO_REPROCESSAMENTO) {
+      return res.status(400).json({
+        success: false,
+        message: `Confirmação inválida. Digite exatamente "${CONFIRMACAO_REPROCESSAMENTO}" para aprovar o reprocessamento.`
+      });
+    }
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, message: 'Selecione ao menos um pacote para reprocessar.' });
+    }
+
+    const uniqueIds = [...new Set(ids.map(id => Number(id)))].filter(id => Number.isInteger(id) && id > 0);
+    if (uniqueIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'Nenhum ID de pacote válido informado.' });
+    }
+    if (uniqueIds.length > MAX_REPROCESS_ITEMS) {
+      return res.status(400).json({ success: false, message: `Limite de ${MAX_REPROCESS_ITEMS} pacotes por execução.` });
+    }
+
+    try {
+      const found = Pacote.findByIds(uniqueIds);
+      if (found.length === 0) {
+        return res.status(404).json({ success: false, message: 'Nenhum dos pacotes selecionados foi encontrado.' });
+      }
+
+      const foundIds = found.map(p => p.id);
+      const notFound = uniqueIds.filter(id => !foundIds.includes(id));
+      const runId = ReprocessService.generateRunId();
+
+      logReprocess({
+        status: 'INICIO',
+        runId,
+        extra: { total: foundIds.length, ids: foundIds, nao_encontrados: notFound }
+      });
+
+      enqueueReprocess(foundIds, runId);
+      DashboardController.broadcastEvent({ type: 'dashboard-update' });
+
+      res.json({
+        success: true,
+        message: `${foundIds.length} pacote(s) enviado(s) para reprocessamento (execução ${runId}).`,
+        data: { runId, total: foundIds.length, notFound }
+      });
+    } catch (error) {
+      console.error('Erro ao iniciar reprocessamento de pacotes:', error.message);
+      res.status(500).json({ success: false, message: 'Erro interno ao iniciar o reprocessamento.' });
     }
   }
 

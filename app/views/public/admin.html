@@ -341,13 +341,22 @@
         </div>
 
         <div class="bg-surface-container-low border border-outline rounded-xl overflow-hidden">
-          <div class="p-space-6 border-b border-outline">
+          <div class="p-space-6 border-b border-outline flex flex-col md:flex-row md:items-center justify-between gap-3">
             <h4 class="font-headline-sm text-headline-sm text-on-surface">Histórico de Coleta</h4>
+            <div class="flex items-center gap-3">
+              <span id="history-selection-count" class="text-body-sm text-on-surface-variant">Nenhum pacote selecionado</span>
+              <button id="btn-reprocess-selected" onclick="openReprocessModal()" disabled class="px-4 py-2 bg-amber-500 text-black rounded-lg font-bold text-body-sm hover:bg-amber-600 transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed" title="Executa novamente a leitura (OCR + IA) dos pacotes selecionados">
+                <span class="material-symbols-outlined text-[18px]">sync</span> Reprocessar selecionados
+              </button>
+            </div>
           </div>
           <div class="overflow-x-auto custom-scrollbar">
             <table class="w-full text-left border-collapse">
               <thead class="bg-surface-container-lowest border-b border-outline-variant">
                 <tr>
+                  <th class="pl-space-6 py-space-4 w-10">
+                    <input type="checkbox" id="history-select-all" onchange="toggleHistorySelectAll(this.checked)" title="Selecionar todos" class="w-4 h-4 rounded border-outline bg-surface text-primary focus:ring-primary focus:ring-offset-0"/>
+                  </th>
                   <th class="px-space-6 py-space-4 font-label-md text-label-md text-on-surface-variant uppercase">Horário</th>
                   <th class="px-space-6 py-space-4 font-label-md text-label-md text-on-surface-variant uppercase">Remetente</th>
                   <th class="px-space-6 py-space-4 font-label-md text-label-md text-on-surface-variant uppercase">Plataforma</th>
@@ -357,7 +366,7 @@
               </thead>
               <tbody class="divide-y divide-outline-variant" id="history-table-body">
                 <tr>
-                  <td colspan="5" class="text-center py-8 text-on-surface-variant/50">Selecione uma data e clique em buscar.</td>
+                  <td colspan="6" class="text-center py-8 text-on-surface-variant/50">Selecione uma data e clique em buscar.</td>
                 </tr>
               </tbody>
             </table>
@@ -893,6 +902,53 @@
   </div>
 
   <!-- ========================================== -->
+  <!-- MODAL: CONFIRMAÇÃO DE REPROCESSAMENTO -->
+  <!-- ========================================== -->
+  <div id="modal-reprocessar" class="hidden fixed inset-0 z-50 flex items-center justify-center p-6 bg-surface-container-lowest/80 backdrop-blur-sm">
+    <div class="bg-surface-container-low border border-amber-500/40 w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-outline-variant bg-surface-container flex justify-between items-center">
+        <h3 class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-2">
+          <span class="material-symbols-outlined text-amber-500">warning</span> Confirmar Reprocessamento
+        </h3>
+        <button onclick="closeReprocessModal()" class="text-on-surface-variant hover:text-on-surface">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="p-6 space-y-4 max-h-[65vh] overflow-y-auto custom-scrollbar">
+        <p class="text-body-md text-on-surface">
+          Você está prestes a reprocessar <strong id="reprocess-count" class="text-amber-500">0</strong> pacote(s).
+          A leitura (OCR + IA) será executada novamente e os dados de <strong>código, remetente e plataforma</strong> poderão ser <strong>substituídos</strong>.
+        </p>
+        <ul class="text-body-sm text-on-surface-variant list-disc pl-5 space-y-1">
+          <li>Data e horário de coleta são mantidos.</li>
+          <li>Se a nova leitura falhar, for incompleta ou gerar código duplicado, o registro é mantido inalterado e um alerta é criado.</li>
+          <li>Cada alteração é registrada no log de auditoria (<code>reprocessamento.log</code>) com o dado anterior e o novo.</li>
+        </ul>
+        <div class="border border-outline rounded-lg overflow-hidden">
+          <table class="w-full text-left text-body-sm">
+            <thead class="bg-surface-container-lowest text-on-surface-variant uppercase text-[11px]">
+              <tr><th class="px-3 py-2">Horário</th><th class="px-3 py-2">Remetente atual</th><th class="px-3 py-2">Código atual</th></tr>
+            </thead>
+            <tbody id="reprocess-preview-body" class="divide-y divide-outline-variant"></tbody>
+          </table>
+        </div>
+        <div class="space-y-2">
+          <label for="reprocess-confirm-input" class="text-label-md text-on-surface-variant block font-bold">
+            Para aprovar, digite <span class="font-mono text-amber-500">REPROCESSAR</span>:
+          </label>
+          <input id="reprocess-confirm-input" type="text" autocomplete="off" spellcheck="false" oninput="updateReprocessConfirmState()" onkeydown="if(event.key === 'Enter') confirmReprocess()" class="w-full bg-surface-container border border-outline rounded-lg px-4 py-2.5 text-on-surface outline-none focus:ring-1 focus:ring-amber-500 font-mono" placeholder="REPROCESSAR"/>
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-outline-variant bg-surface-container flex justify-end gap-3">
+        <button onclick="closeReprocessModal()" class="px-4 py-2 border border-outline text-on-surface rounded-lg font-label-md hover:bg-surface-container-high transition-colors">Cancelar</button>
+        <button id="btn-confirm-reprocess" onclick="confirmReprocess()" disabled class="px-6 py-2 bg-amber-500 text-black font-bold rounded-lg hover:bg-amber-600 transition-colors font-label-md flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+          <span class="material-symbols-outlined text-[18px]">sync</span> Reprocessar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
   <!-- MODAL: VISUALIZADOR DE IMAGEM DA ETIQUETA -->
   <!-- ========================================== -->
   <div id="modal-image" class="hidden fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/90" onclick="closeImageModal()">
@@ -1172,6 +1228,45 @@
           `;
         } else {
           alertasPageList.innerHTML = data.alerts.map(alert => {
+            if (alert.tipo_erro === 'REPROCESSAMENTO_ERRO') {
+              const currentInfo = alert.pacote_remetente_atual 
+                ? `${alert.pacote_remetente_atual} (${alert.pacote_codigo_atual || 'sem código'})`
+                : 'Registro original mantido';
+              const suggestedInfo = alert.remetente_sugerido && alert.remetente_sugerido !== 'NÃO IDENTIFICADO'
+                ? `${alert.remetente_sugerido} (${alert.codigo_conflito || 'sem código'})`
+                : (alert.detalhe || 'Leitura não identificada');
+              return `
+                <div class="flex flex-col md:flex-row md:items-center justify-between p-5 bg-amber-500/10 border border-amber-500/40 rounded-lg gap-4">
+                  <div class="flex gap-4 items-center overflow-hidden">
+                    <div class="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                      <span class="material-symbols-outlined text-amber-400">sync_problem</span>
+                    </div>
+                    <div class="overflow-hidden">
+                      <div class="flex items-center gap-2">
+                        <p class="font-label-md text-label-md text-amber-400 font-bold">Reprocessamento com Erro</p>
+                        <span class="text-[11px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono">Pacote #${alert.pacote_id || '?'}</span>
+                      </div>
+                      <p class="text-body-sm text-on-surface truncate" title="${alert.detalhe || ''}">Motivo: ${alert.detalhe || 'Leitura com falha'}</p>
+                      <p class="text-xs text-on-surface-variant truncate">Atual: <span class="font-medium text-on-surface">${currentInfo}</span> | Sugerido: <span class="font-medium text-amber-300">${suggestedInfo}</span></p>
+                    </div>
+                  </div>
+                  <div class="flex gap-2 flex-shrink-0 items-center justify-end">
+                    <button onclick="openImageModal('${alert.caminho_imagem_nova}')" class="p-2 hover:text-primary transition-colors text-on-surface-variant" title="Visualizar etiqueta">
+                      <span class="material-symbols-outlined text-[20px]">visibility</span>
+                    </button>
+                    <button onclick="retryAlert(${alert.id})" class="px-3 py-1.5 bg-amber-500 text-black rounded font-bold font-label-md text-xs hover:bg-amber-600 transition-colors flex items-center gap-1" title="Reprocessar este pacote novamente na fila">
+                      <span class="material-symbols-outlined text-[16px]">sync</span> Reprocessar
+                    </button>
+                    <button onclick="openConfronto(${alert.id})" class="px-4 py-2 bg-primary text-on-primary rounded font-label-md text-label-md hover:opacity-90 transition-colors flex-shrink-0" title="Editar e aplicar as alterações manualmente no pacote">
+                      Resolver
+                    </button>
+                    <button onclick="deleteAlert(${alert.id})" class="p-2 text-on-surface-variant hover:text-error hover:bg-error/10 rounded transition-colors" title="Descartar alerta e manter o registro original">
+                      <span class="material-symbols-outlined text-[20px]">close</span>
+                    </button>
+                  </div>
+                </div>
+              `;
+            }
             if (alert.tipo_erro === 'ERRO_SERVICO_EXTERNO') {
               return `
                 <div class="flex items-center justify-between p-5 bg-amber-500/10 border border-amber-500/30 rounded-lg">
@@ -1286,9 +1381,182 @@
 
 
     // ==========================================
-    // API: HISTÓRICO FETCH
+    // API: HISTÓRICO FETCH & SELEÇÃO PARA REPROCESSAMENTO
     // ==========================================
     let historySearchTimeout = null;
+    const selectedPackageIds = new Set();
+    const CONFIRMACAO_REPROCESSAR_TEXTO = 'REPROCESSAR';
+
+    function isPackageSimulated(pkg) {
+      if (!pkg) return false;
+      const rem = (pkg.remetente_bruto || '').toLowerCase();
+      return rem.includes('(simulado)');
+    }
+
+    function toggleHistoryPackageSelection(id, checked) {
+      const numId = Number(id);
+      if (checked) {
+        selectedPackageIds.add(numId);
+      } else {
+        selectedPackageIds.delete(numId);
+      }
+      updateHistorySelectionUI();
+    }
+
+    function toggleHistorySelectAll(checked) {
+      const checkboxes = document.querySelectorAll('.history-package-checkbox');
+      checkboxes.forEach(cb => {
+        cb.checked = checked;
+        const numId = Number(cb.value);
+        if (checked) {
+          selectedPackageIds.add(numId);
+        } else {
+          selectedPackageIds.delete(numId);
+        }
+      });
+      updateHistorySelectionUI();
+    }
+
+    function updateHistorySelectionUI() {
+      const countEl = document.getElementById('history-selection-count');
+      const btn = document.getElementById('btn-reprocess-selected');
+      const selectAllCb = document.getElementById('history-select-all');
+      const checkboxes = Array.from(document.querySelectorAll('.history-package-checkbox'));
+
+      const size = selectedPackageIds.size;
+      if (countEl) {
+        countEl.textContent = size === 0
+          ? 'Nenhum pacote selecionado'
+          : `${size} pacote${size > 1 ? 's' : ''} selecionado${size > 1 ? 's' : ''}`;
+      }
+      if (btn) {
+        btn.disabled = size === 0;
+      }
+      if (selectAllCb && checkboxes.length > 0) {
+        const checkedCount = checkboxes.filter(cb => cb.checked).length;
+        selectAllCb.checked = checkedCount === checkboxes.length;
+        selectAllCb.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+      } else if (selectAllCb) {
+        selectAllCb.checked = false;
+        selectAllCb.indeterminate = false;
+      }
+    }
+
+    function openReprocessModal(singleId = null) {
+      let idsToProcess = [];
+      if (singleId !== null) {
+        idsToProcess = [Number(singleId)];
+      } else {
+        idsToProcess = Array.from(selectedPackageIds);
+      }
+
+      if (idsToProcess.length === 0) {
+        alert('Selecione ao menos um pacote para reprocessar.');
+        return;
+      }
+
+      // Se foi aberto para um único pacote via ação rápida, atualiza a seleção
+      if (singleId !== null) {
+        selectedPackageIds.clear();
+        selectedPackageIds.add(Number(singleId));
+        const checkboxes = document.querySelectorAll('.history-package-checkbox');
+        checkboxes.forEach(cb => {
+          cb.checked = Number(cb.value) === Number(singleId);
+        });
+        updateHistorySelectionUI();
+      }
+
+      const modal = document.getElementById('modal-reprocessar');
+      const countEl = document.getElementById('reprocess-count');
+      const previewBody = document.getElementById('reprocess-preview-body');
+      const input = document.getElementById('reprocess-confirm-input');
+
+      countEl.textContent = idsToProcess.length;
+      input.value = '';
+      updateReprocessConfirmState();
+
+      // Monta preview com até 10 pacotes
+      const previewPkgs = idsToProcess.map(id => packagesCache[id]).filter(Boolean);
+      const rows = previewPkgs.slice(0, 10).map(pkg => `
+        <tr class="hover:bg-surface-container">
+          <td class="px-3 py-1.5 font-mono text-xs text-on-surface-variant">${pkg.hora_coleta}</td>
+          <td class="px-3 py-1.5 text-on-surface font-medium truncate max-w-[220px]" title="${pkg.remetente_bruto}">${pkg.remetente_bruto}</td>
+          <td class="px-3 py-1.5 font-mono text-xs text-on-surface-variant">${pkg.codigo_pacote}</td>
+        </tr>
+      `).join('');
+
+      const remaining = idsToProcess.length - Math.min(idsToProcess.length, 10);
+      const remainingRow = remaining > 0 ? `
+        <tr><td colspan="3" class="px-3 py-1.5 text-center text-xs text-on-surface-variant/60">...e mais ${remaining} pacote(s)</td></tr>
+      ` : '';
+
+      previewBody.innerHTML = rows + remainingRow;
+      modal.classList.remove('hidden');
+      setTimeout(() => input.focus(), 50);
+    }
+
+    function closeReprocessModal() {
+      const modal = document.getElementById('modal-reprocessar');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function updateReprocessConfirmState() {
+      const input = document.getElementById('reprocess-confirm-input');
+      const btn = document.getElementById('btn-confirm-reprocess');
+      const isApproved = (input?.value || '').trim() === CONFIRMACAO_REPROCESSAR_TEXTO;
+      if (btn) btn.disabled = !isApproved;
+    }
+
+    async function confirmReprocess() {
+      const input = document.getElementById('reprocess-confirm-input');
+      const btn = document.getElementById('btn-confirm-reprocess');
+      const ids = Array.from(selectedPackageIds);
+
+      if ((input?.value || '').trim() !== CONFIRMACAO_REPROCESSAR_TEXTO) {
+        alert(`Digite exatamente "${CONFIRMACAO_REPROCESSAR_TEXTO}" para aprovar.`);
+        return;
+      }
+      if (ids.length === 0) {
+        alert('Nenhum pacote selecionado.');
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">sync</span> Enviando...';
+      }
+
+      try {
+        const response = await fetch('/api/pacotes/reprocessar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ids,
+            confirmacao: CONFIRMACAO_REPROCESSAR_TEXTO
+          })
+        });
+
+        const result = await response.json();
+        if (response.ok && result.success) {
+          closeReprocessModal();
+          alert(`Sucesso! ${result.message}\n\nAcompanhe o progresso na aba "Processar em Lote" ou na Dashboard.`);
+          selectedPackageIds.clear();
+          updateHistorySelectionUI();
+          fetchDashboardData();
+          fetchHistory();
+        } else {
+          alert('Erro ao iniciar reprocessamento: ' + (result.message || 'Erro desconhecido.'));
+        }
+      } catch (err) {
+        console.error('Erro ao chamar /api/pacotes/reprocessar:', err);
+        alert('Erro de conexão ao enviar pacotes para reprocessamento.');
+      } finally {
+        if (btn) {
+          btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">sync</span> Reprocessar';
+          updateReprocessConfirmState();
+        }
+      }
+    }
 
     function handleHistoryClientInput() {
       const val = document.getElementById('history-client-filter')?.value || '';
@@ -1328,7 +1596,7 @@
       const client = document.getElementById('history-client-filter')?.value.trim() || '';
 
       const tableBody = document.getElementById('history-table-body');
-      tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-on-surface-variant/50">Buscando pacotes...</td></tr>`;
+      tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-on-surface-variant/50">Buscando pacotes...</td></tr>`;
 
       try {
         let url = `/api/historico?data=${encodeURIComponent(date)}`;
@@ -1343,45 +1611,62 @@
             const emptyMsg = client 
               ? `Nenhum pacote encontrado para o cliente "${client}" nesta data.` 
               : 'Nenhum pacote encontrado para esta data.';
-            tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-on-surface-variant/50">${emptyMsg}</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-on-surface-variant/50">${emptyMsg}</td></tr>`;
+            updateHistorySelectionUI();
           } else {
             result.data.forEach(pkg => {
               packagesCache[pkg.id] = pkg;
             });
-            tableBody.innerHTML = result.data.map(pkg => `
-              <tr class="hover:bg-surface-container transition-colors">
-                <td class="px-space-6 py-space-4 font-body-sm text-body-sm text-on-surface">${pkg.hora_coleta}</td>
-                <td class="px-space-6 py-space-4 font-body-sm text-body-sm text-on-surface font-medium">${pkg.remetente_bruto}</td>
-                <td class="px-space-6 py-space-4">
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
-                    pkg.plataforma === 'Shopee' ? 'bg-primary-container/20 text-primary border-primary-container/30' :
-                    pkg.plataforma === 'Mercado Livre' ? 'bg-secondary-container/20 text-secondary border-secondary-container/30' :
-                    'bg-surface-container-high text-on-surface-variant/70 border-outline'
-                  }">${pkg.plataforma}</span>
-                </td>
-                <td class="px-space-6 py-space-4 font-body-sm text-body-sm text-on-surface-variant font-mono">${pkg.codigo_pacote}</td>
-                <td class="px-space-6 py-space-4 text-right">
-                  <div class="flex justify-end gap-2">
-                    <button onclick="openImageModal('${pkg.caminho_imagem}')" class="p-1 hover:text-primary transition-colors text-on-surface-variant" title="Visualizar etiqueta">
-                      <span class="material-symbols-outlined text-[20px]">visibility</span>
-                    </button>
-                    <button onclick="openEditModal(${pkg.id})" class="p-1 hover:text-primary transition-colors text-on-surface-variant" title="Editar dados">
-                      <span class="material-symbols-outlined text-[20px]">edit</span>
-                    </button>
-                    <button onclick="deletePackage(${pkg.id})" class="p-1 hover:text-error transition-colors text-on-surface-variant" title="Excluir pacote e foto">
-                      <span class="material-symbols-outlined text-[20px]">delete</span>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            `).join('');
+            tableBody.innerHTML = result.data.map(pkg => {
+              const isSimulated = isPackageSimulated(pkg);
+              const isChecked = selectedPackageIds.has(Number(pkg.id));
+              return `
+                <tr class="hover:bg-surface-container transition-colors ${isSimulated ? 'bg-amber-500/5' : ''}">
+                  <td class="pl-space-6 py-space-4">
+                    <input type="checkbox" value="${pkg.id}" ${isChecked ? 'checked' : ''} onchange="toggleHistoryPackageSelection(${pkg.id}, this.checked)" class="history-package-checkbox w-4 h-4 rounded border-outline bg-surface text-primary focus:ring-primary focus:ring-offset-0"/>
+                  </td>
+                  <td class="px-space-6 py-space-4 font-body-sm text-body-sm text-on-surface">${pkg.hora_coleta}</td>
+                  <td class="px-space-6 py-space-4 font-body-sm text-body-sm text-on-surface font-medium">
+                    <div class="flex items-center gap-2">
+                      <span>${pkg.remetente_bruto}</span>
+                      ${isSimulated ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30" title="Registro gravado com dados simulados devido a falha externa">SIMULADO</span>' : ''}
+                    </div>
+                  </td>
+                  <td class="px-space-6 py-space-4">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
+                      pkg.plataforma === 'Shopee' ? 'bg-primary-container/20 text-primary border-primary-container/30' :
+                      pkg.plataforma === 'Mercado Livre' ? 'bg-secondary-container/20 text-secondary border-secondary-container/30' :
+                      'bg-surface-container-high text-on-surface-variant/70 border-outline'
+                    }">${pkg.plataforma}</span>
+                  </td>
+                  <td class="px-space-6 py-space-4 font-body-sm text-body-sm text-on-surface-variant font-mono">${pkg.codigo_pacote}</td>
+                  <td class="px-space-6 py-space-4 text-right">
+                    <div class="flex justify-end gap-2">
+                      <button onclick="openReprocessModal(${pkg.id})" class="p-1 hover:text-amber-400 transition-colors text-on-surface-variant" title="Reprocessar este pacote">
+                        <span class="material-symbols-outlined text-[20px]">sync</span>
+                      </button>
+                      <button onclick="openImageModal('${pkg.caminho_imagem}')" class="p-1 hover:text-primary transition-colors text-on-surface-variant" title="Visualizar etiqueta">
+                        <span class="material-symbols-outlined text-[20px]">visibility</span>
+                      </button>
+                      <button onclick="openEditModal(${pkg.id})" class="p-1 hover:text-primary transition-colors text-on-surface-variant" title="Editar dados">
+                        <span class="material-symbols-outlined text-[20px]">edit</span>
+                      </button>
+                      <button onclick="deletePackage(${pkg.id})" class="p-1 hover:text-error transition-colors text-on-surface-variant" title="Excluir pacote e foto">
+                        <span class="material-symbols-outlined text-[20px]">delete</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              `;
+            }).join('');
+            updateHistorySelectionUI();
           }
         } else {
-          tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-error font-bold">${result.message || 'Erro ao carregar histórico.'}</td></tr>`;
+          tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-error font-bold">${result.message || 'Erro ao carregar histórico.'}</td></tr>`;
         }
       } catch (err) {
         console.error('Erro ao buscar histórico:', err);
-        tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-error font-bold">Erro de conexão ao buscar histórico.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-error font-bold">Erro de conexão ao buscar histórico.</td></tr>`;
       }
     }
 
@@ -1551,6 +1836,7 @@
           if (response.ok && result.success) {
             closeEditModal();
             fetchDashboardData();
+            if (currentTab === 'historico') fetchHistory();
           } else {
             alert('Erro ao gravar pacote: ' + (result.message || 'Erro desconhecido.'));
           }
@@ -1631,7 +1917,13 @@
 
     async function discardAlertFromEditModal() {
       if (!isResolvingIncompleteAlert || !activeAlertId) return;
-      if (!confirm('Tem certeza que deseja descartar esta foto? Ela será excluída permanentemente do disco.')) {
+      const alertItem = alertsCache[activeAlertId];
+      const isReprocess = alertItem && alertItem.tipo_erro === 'REPROCESSAMENTO_ERRO';
+      const confirmMsg = isReprocess
+        ? 'Deseja descartar este alerta de reprocessamento? O pacote continuará gravado com os dados atuais e a foto não será excluída.'
+        : 'Tem certeza que deseja descartar esta foto? Ela será excluída permanentemente do disco.';
+
+      if (!confirm(confirmMsg)) {
         return;
       }
       try {
@@ -1640,9 +1932,10 @@
         });
         const result = await response.json();
         if (response.ok && result.success) {
-          alert('Alerta descartado e foto removida do disco.');
+          alert(result.message || (isReprocess ? 'Alerta descartado.' : 'Alerta descartado e foto removida do disco.'));
           closeEditModal();
           fetchDashboardData();
+          if (currentTab === 'historico') fetchHistory();
         } else {
           alert('Erro ao descartar alerta: ' + (result.message || 'Erro desconhecido.'));
         }
@@ -1658,20 +1951,39 @@
         return;
       }
 
-      if (alert.tipo_erro === 'LEITURA_INCOMPLETA') {
-        // Para leitura incompleta, abre o modal de edição adaptado
+      if (alert.tipo_erro === 'LEITURA_INCOMPLETA' || alert.tipo_erro === 'REPROCESSAMENTO_ERRO') {
+        // Para leitura incompleta ou erro de reprocessamento, abre o modal de edição adaptado
         isResolvingIncompleteAlert = true;
         activeAlertId = alertId;
 
-        document.getElementById('edit-modal-title').innerText = 'Resolver Leitura Incompleta';
-        document.getElementById('btn-save-edit-modal').innerText = 'Confirmar e Gravar Pacote';
+        const isReprocess = alert.tipo_erro === 'REPROCESSAMENTO_ERRO';
+        document.getElementById('edit-modal-title').innerText = isReprocess 
+          ? `Resolver Erro de Reprocessamento (Pacote #${alert.pacote_id || '?'})`
+          : 'Resolver Leitura Incompleta';
+        document.getElementById('btn-save-edit-modal').innerText = isReprocess
+          ? 'Salvar e Atualizar Pacote'
+          : 'Confirmar e Gravar Pacote';
+        document.getElementById('btn-discard-edit-modal').innerText = isReprocess
+          ? 'Descartar Alerta (manter pacote)'
+          : 'Descartar Foto';
         document.getElementById('btn-discard-edit-modal').classList.remove('hidden');
         document.getElementById('btn-delete-pkg-edit-modal').classList.add('hidden');
 
-        document.getElementById('edit-pkg-id').value = '';
-        document.getElementById('edit-pkg-code').value = alert.codigo_conflito && alert.codigo_conflito !== 'NÃO IDENTIFICADO' ? alert.codigo_conflito : '';
-        document.getElementById('edit-pkg-sender').value = alert.remetente_sugerido && alert.remetente_sugerido !== 'NÃO IDENTIFICADO' ? alert.remetente_sugerido : '';
-        document.getElementById('edit-pkg-platform').value = ['Shopee', 'Mercado Livre'].includes(alert.plataforma_sugerida) ? alert.plataforma_sugerida : 'Shopee';
+        // Pré-preenche com os dados sugeridos da nova leitura; se vazios, usa os atuais do pacote
+        const prefCode = (alert.codigo_conflito && alert.codigo_conflito !== 'NÃO IDENTIFICADO') 
+          ? alert.codigo_conflito 
+          : (alert.pacote_codigo_atual || '');
+        const prefSender = (alert.remetente_sugerido && alert.remetente_sugerido !== 'NÃO IDENTIFICADO')
+          ? alert.remetente_sugerido
+          : (alert.pacote_remetente_atual || '');
+        const prefPlat = ['Shopee', 'Mercado Livre'].includes(alert.plataforma_sugerida)
+          ? alert.plataforma_sugerida
+          : (['Shopee', 'Mercado Livre'].includes(alert.pacote_plataforma_atual) ? alert.pacote_plataforma_atual : 'Shopee');
+
+        document.getElementById('edit-pkg-id').value = alert.pacote_id || '';
+        document.getElementById('edit-pkg-code').value = prefCode;
+        document.getElementById('edit-pkg-sender').value = prefSender;
+        document.getElementById('edit-pkg-platform').value = prefPlat;
 
         const imgEl = document.getElementById('edit-pkg-img');
         imgEl.classList.add('hidden');
@@ -2058,7 +2370,13 @@
     }
 
     async function deleteAlert(id) {
-      if (!confirm('Deseja realmente descartar este alerta? A imagem será excluída permanentemente do disco.')) {
+      const alertItem = alertsCache[id];
+      const isReprocess = alertItem && alertItem.tipo_erro === 'REPROCESSAMENTO_ERRO';
+      const confirmMsg = isReprocess
+        ? 'Deseja descartar este alerta de reprocessamento? O pacote continuará gravado com os dados atuais e a foto não será excluída.'
+        : 'Deseja realmente descartar este alerta? A imagem será excluída permanentemente do disco.';
+
+      if (!confirm(confirmMsg)) {
         return;
       }
       try {
@@ -2068,6 +2386,7 @@
         const result = await response.json();
         if (response.ok && result.success) {
           fetchDashboardData();
+          if (currentTab === 'historico') fetchHistory();
         } else {
           alert('Erro ao descartar alerta: ' + (result.message || 'Erro desconhecido.'));
         }

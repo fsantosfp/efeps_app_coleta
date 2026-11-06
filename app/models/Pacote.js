@@ -25,6 +25,17 @@ class Pacote {
   }
 
   /**
+   * Busca vários pacotes pelos IDs.
+   * @param {Array<number>} ids IDs dos pacotes.
+   * @returns {Array} Pacotes encontrados.
+   */
+  static findByIds(ids) {
+    if (!Array.isArray(ids) || ids.length === 0) return [];
+    const placeholders = ids.map(() => '?').join(',');
+    return db.prepare(`SELECT * FROM pacotes WHERE id IN (${placeholders}) ORDER BY id ASC`).all(...ids);
+  }
+
+  /**
    * Busca um pacote que crie conflito de duplicidade diária.
    * @param {string} codigo Código de barras do pacote.
    * @param {string} date Data da coleta (YYYY-MM-DD).

@@ -1,5 +1,5 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { isTransientError } = require('../utils/helpers');
+const { isTransientError, markAsExternalServiceError } = require('../utils/helpers');
 require('dotenv').config();
 
 // Inicialização do Cliente Gemini
@@ -122,8 +122,11 @@ Retorne APENAS um objeto JSON válido correspondente ao seguinte esquema:
       console.error('Erro temporário ao processar classificação com Gemini, propagando para retentativa:', error.message);
       throw error;
     }
-    console.error('Erro ao processar classificação com Gemini, caindo para classificação local resiliente:', error.message);
-    return performLocalClassification(rawText);
+    // Com a API configurada, NUNCA gravamos dados simulados: erros definitivos (ex: 402 créditos
+    // pré-pagos esgotados, 403 chave inválida, resposta inválida) são propagados como falha de
+    // serviço externo para que o item vá para a fila de alertas e possa ser reprocessado depois.
+    console.error('Erro definitivo ao processar classificação com Gemini (sem fallback simulado):', error.message);
+    throw markAsExternalServiceError(error, 'Gemini');
   }
 }
 

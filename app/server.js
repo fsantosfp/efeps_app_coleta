@@ -110,6 +110,9 @@ function runTtlCleanup() {
 
     let deletedAlertFilesCount = 0;
     alertasExpirados.forEach(alert => {
+      // Alertas de reprocessamento compartilham a imagem com um pacote existente:
+      // a imagem é removida apenas pela limpeza do próprio pacote.
+      if (alert.pacote_id) return;
       if (alert.caminho_imagem_nova) {
         const absolutePath = path.isAbsolute(alert.caminho_imagem_nova)
           ? alert.caminho_imagem_nova

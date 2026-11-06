@@ -3,7 +3,8 @@ const EventEmitter = require('events');
 const Pacote = require('../models/Pacote');
 const AlertaFila = require('../models/AlertaFila');
 const { performOCR, classifyTextWithGemini } = require('./PipelineService');
-const { getSaoPauloDate, getSaoPauloTime, isTransientError, retryWithBackoff } = require('../utils/helpers');
+const ReprocessService = require('./ReprocessService');
+const { getSaoPauloDate, getSaoPauloTime, isExternalServiceError, retryWithBackoff } = require('../utils/helpers');
 
 const queueEvents = new EventEmitter();
 
@@ -68,6 +69,31 @@ function enqueueImage(imagePath, originalDate = null, originalTime = null) {
 }
 
 /**
+ * Adiciona pacotes já cadastrados à fila para reprocessamento (OCR + classificação novamente).
+ * Compartilha a mesma fila FIFO e o mesmo limite de concorrência/intervalo dos novos pacotes,
+ * evitando estourar a cota da API de IA.
+ * @param {Array<number>} pacoteIds IDs dos pacotes a reprocessar.
+ * @param {string} runId Identificador da execução de reprocessamento (para auditoria).
+ * @returns {number} Quantidade de itens enfileirados.
+ */
+function enqueueReprocess(pacoteIds, runId) {
+  if (!Array.isArray(pacoteIds) || pacoteIds.length === 0) return 0;
+
+  pacoteIds.forEach(pacoteId => {
+    fileQueue.push({ type: 'reprocess', pacoteId, runId, imagePath: `pacote#${pacoteId}` });
+  });
+
+  totalEnqueuedToday += pacoteIds.length;
+  console.log(`[FILA/REPROCESSAMENTO] ${pacoteIds.length} pacote(s) adicionado(s) para reprocessamento (execução ${runId}). Total pendente na fila: ${fileQueue.length}.`);
+
+  if (activeWorkers < MAX_CONCURRENT_WORKERS) {
+    processNext();
+  }
+
+  return pacoteIds.length;
+}
+
+/**
  * Obtém o status atual do monitoramento da fila.
  */
 function getQueueStatus() {
@@ -95,6 +121,19 @@ async function processNext() {
 
   activeWorkers++;
   const item = fileQueue.shift();
+
+  // Itens de reprocessamento de pacotes existentes têm fluxo próprio (atualiza o registro em vez de criar)
+  if (item.type === 'reprocess') {
+    try {
+      await ReprocessService.reprocessPackage(item.pacoteId, item.runId);
+    } catch (error) {
+      console.error(`[FILA/REPROCESSAMENTO/ERRO] Falha inesperada ao reprocessar pacote #${item.pacoteId}:`, error.message);
+    } finally {
+      finishCurrentItem();
+    }
+    return;
+  }
+
   const currentImagePath = item.imagePath;
   const filename = path.basename(currentImagePath);
   // Preserva data/hora original da coleta se fornecida (caso de retry manual)
@@ -162,9 +201,10 @@ async function processNext() {
   } catch (error) {
     console.error(`[FILA/ERRO] Falha crítica ao processar ${filename}:`, error.message);
 
-    // Se o erro for de conexão/API temporária (exauriu as retentativas do 503), salvamos como erro de serviço externo na DLQ
+    // Se o erro for de serviço externo (temporário que exauriu as retentativas, ou definitivo como
+    // 402 créditos esgotados / 403 chave inválida), salvamos como erro de serviço externo na DLQ
     try {
-      if (isTransientError(error)) {
+      if (isExternalServiceError(error)) {
         AlertaFila.create({
           tipo_erro: 'ERRO_SERVICO_EXTERNO',
           codigo_conflito: error.message || 'Erro temporário nas APIs externas',
@@ -192,20 +232,27 @@ async function processNext() {
       console.error('[FILA/ERRO] Falha ao registrar alerta no banco de dados:', dbErr.message);
     }
   } finally {
-    totalProcessedToday++;
-    queueEvents.emit('process-complete');
+    finishCurrentItem();
+  }
+}
 
-    // Se ainda houver itens na fila, aguarda o intervalo de segurança (QUEUE_DELAY_MS)
-    // para evitar estourar limites de requisição por segundo ou cota (429) na API de IA
-    if (fileQueue.length > 0) {
-      setTimeout(() => {
-        activeWorkers--;
-        processNext();
-      }, QUEUE_DELAY_MS);
-    } else {
+/**
+ * Finaliza o item atual: atualiza contadores, notifica a dashboard e agenda o próximo item.
+ */
+function finishCurrentItem() {
+  totalProcessedToday++;
+  queueEvents.emit('process-complete');
+
+  // Se ainda houver itens na fila, aguarda o intervalo de segurança (QUEUE_DELAY_MS)
+  // para evitar estourar limites de requisição por segundo ou cota (429) na API de IA
+  if (fileQueue.length > 0) {
+    setTimeout(() => {
       activeWorkers--;
       processNext();
-    }
+    }, QUEUE_DELAY_MS);
+  } else {
+    activeWorkers--;
+    processNext();
   }
 }
 
@@ -220,6 +267,7 @@ function resetQueueCounters() {
 module.exports = {
   enqueueImage,
   enqueueBatch,
+  enqueueReprocess,
   getQueueStatus,
   resetQueueCounters,
   queueEvents
