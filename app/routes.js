@@ -24,6 +24,7 @@ router.get('/api/events', DashboardController.getEvents);
 router.get('/api/dashboard', DashboardController.getDashboard);
 
 // API Pacotes
+router.post('/api/pacotes/reprocessar', PacoteController.reprocess);
 router.put('/api/pacotes/:id', PacoteController.update);
 router.delete('/api/pacotes/:id', PacoteController.delete);
 router.get('/api/pacotes/conflito/:codigo', PacoteController.getConflict);

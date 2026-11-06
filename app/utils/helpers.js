@@ -25,6 +25,17 @@ function formatToBrazilDate(dateStr) {
 function isTransientError(error) {
   if (!error) return false;
   
+  // 0. Erros definitivos de cobrança/autenticação nunca são temporários (não adianta retentar):
+  //    402 Payment Required (créditos pré-pagos esgotados), 401/403 (chave inválida / sem permissão)
+  const rawCode = error.code || error.status || error.statusCode;
+  const lowerMsg = error.message ? error.message.toLowerCase() : '';
+  if ([401, 402, 403].includes(Number(rawCode)) ||
+      lowerMsg.includes('402 payment required') ||
+      lowerMsg.includes('prepayment credits') ||
+      lowerMsg.includes('billing')) {
+    return false;
+  }
+
   // 1. Verificar propriedades de status HTTP ou gRPC
   const code = error.code || error.status || error.statusCode;
   if (code) {
@@ -45,6 +56,31 @@ function isTransientError(error) {
   ];
 
   return transientTerms.some(term => msg.includes(term));
+}
+
+/**
+ * Indica se o erro deve ser tratado como falha de serviço externo (Google Vision / Gemini).
+ * Inclui erros temporários (503, 429...) e erros definitivos de API marcados explicitamente
+ * (ex: 402 créditos pré-pagos esgotados, 403 chave inválida/sem permissão, cota/cobrança).
+ * @param {Error} error Erro capturado.
+ * @returns {boolean}
+ */
+function isExternalServiceError(error) {
+  if (!error) return false;
+  return Boolean(error.isExternalServiceError) || isTransientError(error);
+}
+
+/**
+ * Marca um erro como falha de serviço externo, preservando a mensagem original.
+ * @param {Error} error Erro original.
+ * @param {string} serviceName Nome do serviço (ex: 'Gemini', 'Vision').
+ * @returns {Error} O mesmo erro, marcado.
+ */
+function markAsExternalServiceError(error, serviceName) {
+  const err = error instanceof Error ? error : new Error(String(error));
+  err.isExternalServiceError = true;
+  err.serviceName = serviceName;
+  return err;
 }
 
 async function retryWithBackoff(fn, retries = 3, delay = 2000) {
@@ -73,5 +109,7 @@ module.exports = {
   getSaoPauloDateTimeString,
   formatToBrazilDate,
   isTransientError,
+  isExternalServiceError,
+  markAsExternalServiceError,
   retryWithBackoff
 };
